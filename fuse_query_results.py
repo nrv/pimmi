@@ -3,11 +3,11 @@ import csv
 import glob
 import pickle
 import logging
-import tim_parameters as prm
-import tim
+import pimmi_parameters as prm
+import pimmi
 
 # TODO parameters from command line, fuse with generate_cluster_viz
-logger = logging.getLogger("fus")
+logger = logging.getLogger("fuse ")
 
 results_pattern = "index/dataset1.ivf1024.mining_0*.csv"
 all_results_file = "index/dataset1.ivf1024.mining.all"

@@ -1,4 +1,4 @@
-# TIM : Twitter Image Mining
+# PIMMI : Python IMage MIning
 Library allowing visual search in a corpus of images, from Twitter... or elsewhere.
 
 SIFT interest points, clustering, based on OpenCV and Faiss, multithreaded.

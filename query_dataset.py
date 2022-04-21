@@ -1,13 +1,13 @@
 import logging
 import csv
-import tim
-import tim_parameters as prm
-import tim_toolbox as tbx
+import pimmi
+import pimmi_parameters as prm
+import pimmi_toolbox as tbx
 import argparse
 
 nb_per_split = 10000
 
-logger = logging.getLogger("qry")
+logger = logging.getLogger("query")
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('--thread', required=False, type=int, help="nb threads, default : " + str(prm.nb_threads))
@@ -64,10 +64,10 @@ if __name__ == '__main__':
 
     faiss_index = args.load_faiss + ".faiss"
     faiss_meta = args.load_faiss + ".meta"
-    index = tim.load_index(faiss_index, faiss_meta)
+    index = pimmi.load_index(faiss_index, faiss_meta)
 
     if args.images_mining:
-        images = tim.get_index_images(index, images_root)
+        images = pimmi.get_index_images(index, images_root)
 
     if args.nb_img:
         images = images.head(args.nb_img)
@@ -80,7 +80,7 @@ if __name__ == '__main__':
         pack_result_file = args.save_mining + "_" + str(pack[prm.dff_pack_id]).zfill(6) + ".csv"
         logger.info("query " + str(len(pack[prm.dff_pack_files])) + " files from pack " +
                     str(pack[prm.dff_pack_id]) + " -> " + pack_result_file)
-        query_result = tim.query_index_mt(index, pack[prm.dff_pack_files], images_root, pack=pack[prm.dff_pack_id])
+        query_result = pimmi.query_index_mt(index, pack[prm.dff_pack_files], images_root, pack=pack[prm.dff_pack_id])
         query_result = query_result.sort_values(by=[prm.dff_query_path, prm.dff_nb_match_ransac, prm.dff_ransac_ratio],
                                                 ascending=False)
         query_result.to_csv(pack_result_file, index=False, quoting=csv.QUOTE_NONNUMERIC)

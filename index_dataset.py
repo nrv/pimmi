@@ -1,10 +1,10 @@
 import logging
-import tim
-import tim_parameters as prm
-import tim_toolbox as tbx
+import pimmi
+import pimmi_parameters as prm
+import pimmi_toolbox as tbx
 import argparse
 
-logger = logging.getLogger("idx")
+logger = logging.getLogger("index")
 
 index_type = "IVF1024,Flat"
 
@@ -38,15 +38,15 @@ if __name__ == '__main__':
         if args.load_faiss:
             previous_faiss_index = args.load_faiss + ".faiss"
             previous_faiss_meta = args.load_faiss + ".meta"
-            previous_index = tim.load_index(previous_faiss_index, previous_faiss_meta)
+            previous_index = pimmi.load_index(previous_faiss_index, previous_faiss_meta)
         exit(0)
 
     if "correct" == args.action:
         if args.load_faiss:
             previous_faiss_index = args.load_faiss + ".faiss"
             previous_faiss_meta = args.load_faiss + ".meta"
-            previous_index = tim.load_index(previous_faiss_index, previous_faiss_meta, correct=index_type)
-            tim.save_index(previous_index, previous_faiss_index, previous_faiss_meta)
+            previous_index = pimmi.load_index(previous_faiss_index, previous_faiss_meta, correct=index_type)
+            pimmi.save_index(previous_index, previous_faiss_index, previous_faiss_meta)
         exit(0)
 
     if not args.save_faiss:
@@ -81,21 +81,21 @@ if __name__ == '__main__':
             exit(1)
         logger.info("index type : " + index_type)
         logger.info("using " + str(prm.nb_images_to_train_index) + " images to train index")
-        empty_index = tim.create_index_mt(index_type, images, images_root, only_empty_index=True)
+        empty_index = pimmi.create_index_mt(index_type, images, images_root, only_empty_index=True)
         empty_faiss_index = args.save_faiss + ".faiss"
         empty_faiss_meta = args.save_faiss + ".meta"
-        tim.save_index(empty_index, empty_faiss_index, empty_faiss_meta)
+        pimmi.save_index(empty_index, empty_faiss_index, empty_faiss_meta)
 
     if "fill" == args.action:
         if args.load_faiss:
             previous_faiss_index = args.load_faiss + ".faiss"
             previous_faiss_meta = args.load_faiss + ".meta"
-            previous_index = tim.load_index(previous_faiss_index, previous_faiss_meta)
+            previous_index = pimmi.load_index(previous_faiss_index, previous_faiss_meta)
             logger.info("using " + str(prm.nb_images_to_train_index) + " images to fill index")
-            filled_index = tim.fill_index_mt(previous_index, images, images_root)
+            filled_index = pimmi.fill_index_mt(previous_index, images, images_root)
         else:
             logger.info("using " + str(prm.nb_images_to_train_index) + " images to train and fill index")
-            filled_index = tim.create_index_mt(index_type, images, images_root)
+            filled_index = pimmi.create_index_mt(index_type, images, images_root)
         filled_faiss_index = args.save_faiss + ".faiss"
         filled_faiss_meta = args.save_faiss + ".meta"
-        tim.save_index(filled_index, filled_faiss_index, filled_faiss_meta)
+        pimmi.save_index(filled_index, filled_faiss_index, filled_faiss_meta)

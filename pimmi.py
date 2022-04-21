@@ -7,7 +7,7 @@ import pickle
 import logging
 import os.path
 from multiprocessing import Queue, Process
-import tim_parameters as prm
+import pimmi_parameters as prm
 
 grid_bits_per_dim = 10
 grid_d = int(math.pow(2, grid_bits_per_dim))
@@ -29,7 +29,7 @@ dff_internal_meta_df = "meta_df"
 sift = None
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(name)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger("tim")
+logger = logging.getLogger("pimmi")
 
 
 def init_sift():

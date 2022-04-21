@@ -2,10 +2,10 @@ import glob
 import json
 import math
 import pandas as pd
-import tim_parameters as prm
+import pimmi_parameters as prm
 import logging
 
-logger = logging.getLogger("tbx")
+logger = logging.getLogger("tools")
 
 
 def get_all_images(image_dirs):

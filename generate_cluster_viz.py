@@ -1,14 +1,14 @@
-import tim_parameters as prm
+import pimmi_parameters as prm
 import logging
 import pickle
 import pandas as pd
 import numpy as np
 import igraph as ig
 import json
-import tim
+import pimmi
 
 # TODO parameters from command line
-logger = logging.getLogger("gen")
+logger = logging.getLogger("gener")
 
 merged_meta_file = "index/dataset1.ivf1024.meta"
 all_results_file = "index/dataset1.ivf1024.mining.all"
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     with open(merged_meta_file, 'rb') as f:
         all_meta = pickle.load(f)
     f.close()
-    all_meta = tim.meta_as_df(all_meta)
+    all_meta = pimmi.meta_as_df(all_meta)
     logger.info("all_meta : %d", len(all_meta))
 
     # all_meta = all_meta.sort_values(by=[prm.dff_nb_points], ascending=True)
