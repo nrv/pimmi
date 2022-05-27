@@ -6,11 +6,12 @@
 # CLI enpoint of the Pimmi library.
 #
 import os
+import csv
 import sys
 import click
 import logging
 
-from pimmi import load_index, save_index, fill_index_mt, create_index_mt
+from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
 import pimmi.pimmi_parameters as prm
 import pimmi.toolbox as tbx
 
@@ -26,14 +27,14 @@ def main():
     pass
 
 
-@main.command(help="Receive a directory containing images as parameter. "
-                   "Index these images and save the resulting index.")
+@main.command(help="Create index and fill with vectors of images. Receive IMAGE-DIR, a directory containing images. "
+                   "Index these images and save. INDEX-NAME will be used as index id by other pimmi commands.")
 @click.argument("image-dir", type=click.Path(exists=True))
-@click.option("--index-name", type=str, help="Name of the index. Defaults to the name of the image directory.")
+@click.argument("index-name", type=str)
 @click.option("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
                                              "Defaults to './index'", default="./index")
 @click.option("--index-type", type=str, default="IVF1024,Flat")
-@click.option("--load-faiss", type=bool, default=False, is_flag=True)
+@click.option("--load-faiss", is_flag=True, type=bool)
 def fill(image_dir, index_name, index_path, index_type, load_faiss):
 
     if not os.path.isdir(image_dir):
@@ -68,3 +69,35 @@ def fill(image_dir, index_name, index_path, index_type, load_faiss):
     filled_faiss_index = os.path.join(index_path, ".".join([index_name, index_type, "faiss"]))
     filled_faiss_meta = os.path.join(index_path, ".".join([index_name, index_type, "meta"]))
     save_index(filled_index, filled_faiss_index, filled_faiss_meta)
+
+
+@main.command(help="Query some index.")
+@click.argument("index-name", type=str)
+@click.argument("image-dir", type=click.Path(exists=True))
+@click.option("--index-path", type=str, help="Directory where the index should be loaded from. "
+                                             "Defaults to './index'", default="./index")
+@click.option("--index-type", type=str, default="IVF1024,Flat")
+@click.option("--nb-img", type=int, help="Nb images to query the index. Defaults to the total nb of images.")
+@click.option('--nb_per_split', type=int, help="nb images to query per pack", default=10000)
+@click.option('--simple', help="use only very simple query params", is_flag=True, type=bool)
+def query(index_name, image_dir, index_path, index_type, nb_img, nb_per_split, simple):
+    faiss_index = os.path.join(index_path, ".".join([index_name, index_type, "faiss"]))
+    faiss_meta = os.path.join(index_path, ".".join([index_name, index_type, "meta"]))
+    index = load_index(faiss_index, faiss_meta)
+
+    images = get_index_images(index, image_dir)
+
+    if nb_img:
+        images = images.head(nb_img)
+
+    logger.info("total number of queries " + str(len(images)))
+    images = images.sort_values(by=prm.dff_image_path)
+    queries = tbx.split_pack(images, nb_per_split)
+    for pack in queries:
+        pack_result_file = faiss_index.replace("faiss", "mining") + "_" + str(pack[prm.dff_pack_id]).zfill(6) + ".csv"
+        logger.info("query " + str(len(pack[prm.dff_pack_files])) + " files from pack " +
+                    str(pack[prm.dff_pack_id]) + " -> " + pack_result_file)
+        query_result = query_index_mt(index, pack[prm.dff_pack_files], image_dir, pack=pack[prm.dff_pack_id])
+        query_result = query_result.sort_values(by=[prm.dff_query_path, prm.dff_nb_match_ransac, prm.dff_ransac_ratio],
+                                                ascending=False)
+        query_result.to_csv(pack_result_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
