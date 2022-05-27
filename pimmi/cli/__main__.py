@@ -31,9 +31,9 @@ def main():
 @click.argument("image-dir", type=click.Path(exists=True))
 @click.option("--index-name", type=str, help="Name of the index. Defaults to the name of the image directory.")
 @click.option("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
-                                             "Defaults to './index'", default="index")
+                                             "Defaults to './index'", default="./index")
 @click.option("--index-type", type=str, default="IVF1024,Flat")
-@click.option("--load_faiss", type=bool, default=False)
+@click.option("--load-faiss", type=bool, default=False, is_flag=True)
 def fill(image_dir, index_name, index_path, index_type, load_faiss):
 
     if not os.path.isdir(image_dir):
@@ -56,12 +56,15 @@ def fill(image_dir, index_name, index_path, index_type, load_faiss):
         logger.info("using " + str(prm.nb_images_to_train_index) + " images to train and fill index")
         filled_index = create_index_mt(index_type, images, image_dir)
 
-    if not index_path and not os.path.isdir("index"):
-        if click.confirm("Are you sure you want to save index data in {}?"
-                                 .format(os.path.join(os.getcwd(), "index"))):
-            os.mkdir("index")
+    if not os.path.isdir(index_path):
+        if click.confirm("Are you sure you want to save index data in {}?".format(os.path.abspath(index_path))):
+            os.mkdir(index_path)
         else:
             index_path = click.prompt('Please enter a valid directory', type=click.Path(exists=True))
+            if not os.path.isdir(index_path):
+                logger.error("{} does not exist.".format(os.path.abspath(index_path)))
+                sys.exit(1)
+
     filled_faiss_index = os.path.join(index_path, ".".join([index_name, index_type, "faiss"]))
     filled_faiss_meta = os.path.join(index_path, ".".join([index_name, index_type, "meta"]))
     save_index(filled_index, filled_faiss_index, filled_faiss_meta)
