@@ -7,7 +7,7 @@ import pickle
 import logging
 import os.path
 from multiprocessing import Queue, Process
-import pimmi_parameters as prm
+import pimmi.pimmi_parameters as prm
 
 grid_bits_per_dim = 10
 grid_d = int(math.pow(2, grid_bits_per_dim))

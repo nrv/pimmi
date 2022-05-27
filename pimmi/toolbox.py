@@ -2,7 +2,7 @@ import glob
 import json
 import math
 import pandas as pd
-import pimmi_parameters as prm
+import pimmi.pimmi_parameters as prm
 import logging
 
 logger = logging.getLogger("tools")

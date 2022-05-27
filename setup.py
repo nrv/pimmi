@@ -4,7 +4,7 @@ with open('./README.md', 'r') as f:
     long_description = f.read()
 
 setup(name='pimmi',
-      version='0.0.0',
+      version='0.0.1',
       description='Python IMage MIning',
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -14,9 +14,8 @@ setup(name='pimmi',
       author_email='',
       keywords='image mining',
       python_requires='>=3.5,<3.8',
-      package_dir={"": "pimmi"},
-      packages=find_packages(where="pimmi"),
-      package_data={'docs': ['README.md']},
+      packages=find_packages(exclude=["collect*", "dist", "build"]),
+      include_package_data=True,
       install_requires=[
         "numpy",
         "pandas",
@@ -27,5 +26,10 @@ setup(name='pimmi',
         "leidenalg",
         "opencv-python"
       ],
+      entry_points={
+        'console_scripts': [
+            'pimmi=pimmi.cli.__main__:main',
+        ]
+      },
       zip_safe=True
       )
