@@ -1,7 +1,7 @@
+click
 numpy
 pandas
 faiss-cpu
-pip
 matplotlib
 python-igraph
 leidenalg
