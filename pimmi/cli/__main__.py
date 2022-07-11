@@ -4,38 +4,56 @@
 # =============================================================================
 #
 # CLI enpoint of the Pimmi library.
-#
+
 import os
 import csv
 import sys
-import click
+import yaml
 import logging
+import argparse
 
 from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
-import pimmi.pimmi_parameters as prm
 import pimmi.toolbox as tbx
-
-CONTEXT_SETTINGS = {
-    "help_option_names": ["-h", "--help"]
-}
 
 logger = logging.getLogger(__name__)
 
 
-@click.group(context_settings=CONTEXT_SETTINGS)
-def main():
-    pass
+def load_config_file(parser, config_file):
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+
+    for param, value in config.items():
+        parser.add_argument(
+            "--{}".format(param),
+            type=type(value),
+            default=value
+        )
 
 
-@main.command(help="Create index and fill with vectors of images. Receive IMAGE-DIR, a directory containing images. "
-                   "Index these images and save. INDEX-NAME will be used as index id by other pimmi commands.")
-@click.argument("image-dir", type=click.Path(exists=True))
-@click.argument("index-name", type=str)
-@click.option("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
-                                             "Defaults to './index'", default="./index")
-@click.option("--index-type", type=str, default="IVF1024,Flat")
-@click.option("--load-faiss", is_flag=True, type=bool)
-def fill(image_dir, index_name, index_path, index_type, load_faiss):
+def load_parameters():
+    parser = argparse.ArgumentParser(prog="pimmi", description='PIMMI: a command line tool for image mining.')
+    load_config_file(parser, "pimmi/config.yml")
+
+    subparsers = parser.add_subparsers(title="commands")
+    parser_fill = subparsers.add_parser('fill', help="Create index and fill with vectors of images. Receive IMAGE-DIR, "
+                                                     "a directory containing images. Index these images and save. "
+                                                     "INDEX-NAME will be used as index id by other pimmi commands.")
+
+    parser_query = subparsers.add_parser('query', help="Query some index.")
+
+    parser_fill.add_argument('image_dir', type=str, metavar='image-dir')
+    parser_fill.add_argument('index_name', type=str, metavar='index-name')
+    parser_fill.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
+                                                            "Defaults to './index'", default="./index")
+    parser_fill.add_argument("--index-type", type=str, choices=["IVF1024,Flat"], default="IVF1024,Flat")
+    parser_fill.add_argument("--load-faiss", action="store_true", default=False)
+    parser_fill.set_defaults(func=fill)
+
+    parameters = parser.parse_args()
+    return parameters
+
+
+def fill(image_dir, index_name, index_path, index_type, load_faiss, **kwargs):
 
     if not os.path.isdir(image_dir):
         logger.error("The provided image-dir is not a directory.")
@@ -58,10 +76,12 @@ def fill(image_dir, index_name, index_path, index_type, load_faiss):
         filled_index = create_index_mt(index_type, images, image_dir)
 
     if not os.path.isdir(index_path):
-        if click.confirm("Are you sure you want to save index data in {}?".format(os.path.abspath(index_path))):
+        print("Are you sure you want to save index data in {}? y/n".format(os.path.abspath(index_path)))
+        if input() == 'y':
             os.mkdir(index_path)
         else:
-            index_path = click.prompt('Please enter a valid directory', type=click.Path(exists=True))
+            print('Please enter a valid directory')
+            index_path = input()
             if not os.path.isdir(index_path):
                 logger.error("{} does not exist.".format(os.path.abspath(index_path)))
                 sys.exit(1)
@@ -71,16 +91,7 @@ def fill(image_dir, index_name, index_path, index_type, load_faiss):
     save_index(filled_index, filled_faiss_index, filled_faiss_meta)
 
 
-@main.command(help="Query some index.")
-@click.argument("index-name", type=str)
-@click.argument("image-dir", type=click.Path(exists=True))
-@click.option("--index-path", type=str, help="Directory where the index should be loaded from. "
-                                             "Defaults to './index'", default="./index")
-@click.option("--index-type", type=str, default="IVF1024,Flat")
-@click.option("--nb-img", type=int, help="Nb images to query the index. Defaults to the total nb of images.")
-@click.option('--nb_per_split', type=int, help="nb images to query per pack", default=10000)
-@click.option('--simple', help="use only very simple query params", is_flag=True, type=bool)
-def query(index_name, image_dir, index_path, index_type, nb_img, nb_per_split, simple):
+def query(index_name, image_dir, index_path, index_type, nb_img, nb_per_split, simple, **kwargs):
     faiss_index = os.path.join(index_path, ".".join([index_name, index_type, "faiss"]))
     faiss_meta = os.path.join(index_path, ".".join([index_name, index_type, "meta"]))
     index = load_index(faiss_index, faiss_meta)
@@ -101,3 +112,17 @@ def query(index_name, image_dir, index_path, index_type, nb_img, nb_per_split, s
         query_result = query_result.sort_values(by=[prm.dff_query_path, prm.dff_nb_match_ransac, prm.dff_ransac_ratio],
                                                 ascending=False)
         query_result.to_csv(pack_result_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
+
+
+prm = load_parameters()
+
+
+def main():
+    cli = vars(prm)
+    command = cli.pop("func")
+    command(**cli)
+
+
+
+
+
