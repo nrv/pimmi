@@ -8,7 +8,6 @@
 import os
 import csv
 import sys
-import yaml
 import logging
 import argparse
 
@@ -18,24 +17,37 @@ from pimmi.cli.config import parameters as prm
 
 logger = logging.getLogger(__name__)
 parser = argparse.ArgumentParser(prog="pimmi", description='PIMMI: a command line tool for image mining.')
-prm.load_config_file(parser, "pimmi/cli/config.yml")
-
+config_dict = prm.load_config_file("pimmi/cli/config.yml")
+for param, value in config_dict.items():
+    parser.add_argument(
+        "--{}".format(param),
+        type=type(value),
+        default=value,
+        help=argparse.SUPPRESS
+    )
 
 def load_cli_parameters():
     subparsers = parser.add_subparsers(title="commands")
+
+    # FILL command
     parser_fill = subparsers.add_parser('fill', help="Create index and fill with vectors of images. Receive IMAGE-DIR, "
                                                      "a directory containing images. Index these images and save. "
                                                      "INDEX-NAME will be used as index id by other pimmi commands.")
-
-    parser_query = subparsers.add_parser('query', help="Query some index.")
 
     parser_fill.add_argument('image_dir', type=str, metavar='image-dir')
     parser_fill.add_argument('index_name', type=str, metavar='index-name')
     parser_fill.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
                                                             "Defaults to './index'", default="./index")
-    parser_fill.add_argument("--index-type", type=str, choices=["IVF1024,Flat"], default="IVF1024,Flat")
     parser_fill.add_argument("--load-faiss", action="store_true", default=False)
     parser_fill.set_defaults(func=fill)
+
+    # QUERY command
+    parser_query = subparsers.add_parser('query', help="Query some index.")
+
+    # CONFIG-PARAMS command
+    parser_config = subparsers.add_parser('config-params', help="List all arguments that can be passed to pimmi to "
+                                                                "override the standard configuration file.")
+    parser_config.set_defaults(func=config_params)
 
     cli_parameters = vars(parser.parse_args(namespace=prm))
     return cli_parameters
@@ -100,6 +112,11 @@ def query(index_name, image_dir, index_path, index_type, nb_img, nb_per_split, s
         query_result = query_result.sort_values(by=[prm.dff_query_path, prm.dff_nb_match_ransac, prm.dff_ransac_ratio],
                                                 ascending=False)
         query_result.to_csv(pack_result_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
+
+
+def config_params(**kwargs):
+    for param, value in config_dict.items():
+        print("--{}: {}".format(param, value))
 
 
 def main():
