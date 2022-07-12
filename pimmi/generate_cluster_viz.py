@@ -1,4 +1,4 @@
-import pimmi_parameters as prm
+import pimmi.pimmi_parameters as constants
 import logging
 import pickle
 import pandas as pd
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     # logger.info("%d distinct clusters", len(summary_clusters))
     # summary_clusters = summary_clusters.sort_values(by=['nb_seen', 'nb_images'], ascending=False)
 
-    summary_clusters = clusters_with_meta.groupby("cluster").agg({prm.dff_image_path: ['first', 'count']})
+    summary_clusters = clusters_with_meta.groupby("cluster").agg({constants.dff_image_path: ['first', 'count']})
     summary_clusters.columns = ['sample_path', 'nb_images']
     summary_clusters = summary_clusters.reset_index()
     logger.info("%d distinct clusters", len(summary_clusters))
@@ -105,11 +105,17 @@ if __name__ == '__main__':
         nb_matches = sum(sg.es["weight"])
         quality = nb_matches / max_theoretical_matches
         summary_clusters.loc[cluster_id, "match_quality"] = quality
-        logger.info("cluster %d has %d vertices and %d edges, quality index : %f", cluster_id, sg.vcount(), sg.ecount(), quality)
+        logger.info(
+            "cluster %d has %d vertices and %d edges, quality index : %f", cluster_id, sg.vcount(), sg.ecount(), quality
+        )
 
     print(summary_clusters.head(10))
 
-    clusters_viz = from_cluster_2col_table_to_list(clusters_with_meta[["cluster", prm.dff_image_path]], "cluster", "images")
+    clusters_viz = from_cluster_2col_table_to_list(
+        clusters_with_meta[["cluster", constants.dff_image_path]],
+        "cluster",
+        "images"
+    )
     clusters_viz = pd.merge(clusters_viz, summary_clusters, how="left", left_on="cluster", right_on="cluster")
     clusters_viz = clusters_viz.sort_values(by=['nb_images'], ascending=False)
     print(clusters_viz.head(10))

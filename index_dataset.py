@@ -1,20 +1,28 @@
 import logging
 import pimmi
-import pimmi_parameters as prm
-import pimmi_toolbox as tbx
+from pimmi.cli.config import parameters as prm
+import pimmi.toolbox as tbx
 import argparse
 
 logger = logging.getLogger("index")
 
 index_type = "IVF1024,Flat"
 
-
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+config_dict = prm.load_config_file("pimmi/cli/config.yml")
+for param, value in config_dict.items():
+    parser.add_argument(
+        "--{}".format(param),
+        type=type(value),
+        default=value,
+        help=argparse.SUPPRESS
+    )
+
 parser.add_argument("--action", required=True, choices=["create_empty", "fill", "info", "correct"])
 parser.add_argument('--index', required=False, help="faiss factory string, default : " + index_type)
-parser.add_argument('--thread', required=False, type=int, help="nb threads, default : " + str(prm.nb_threads))
+parser.add_argument('--thread', required=False, type=int, help="nb threads, default : " + str(config_dict["nb_threads"]))
 parser.add_argument('--nb_img', required=False, type=int, help="nb images to train index (default : " +
-                                                               str(prm.nb_images_to_train_index) +
+                                                               str(config_dict["nb_threads"]) +
                                                                ") or to add to index")
 parser.add_argument('--load_faiss', required=False, help="faiss index file to load")
 parser.add_argument('--save_faiss', required=False, help="faiss index file to save")
@@ -22,7 +30,7 @@ image_source = parser.add_mutually_exclusive_group()
 image_source.add_argument('--images_dir', required=False, help="index all images from this directory")
 image_source.add_argument('--images_meta', required=False, help="index all images from this file")
 parser.add_argument('--images_meta_root', required=False, help="root path for meta relative paths")
-args = parser.parse_args()
+args = parser.parse_args(namespace=prm)
 
 if __name__ == '__main__':
     if args.thread:

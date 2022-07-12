@@ -1,27 +1,3 @@
-# Some parameters that may be overridden
-nb_threads = 8
-do_resize_image = True
-max_image_dimension = 512
-do_preserve_aspect_ratio_for_quantized_coord = True
-nb_images_to_train_index = 25000
-each_sift_nn = 1000
-do_filter_on_sift_dist = True
-sift_dist_ratio_threshold = 0.6
-adaptative_sift_nn = True
-do_filter_on_sift_match_ratio = False
-sift_match_ratio_threshold = 0.01
-do_filter_on_sift_match_nb = True
-sift_match_nb_threshold = 5
-sift_match_nb_after_ransac_threshold = 5
-do_ransac = True
-remove_query_from_results = True
-
-sift_nfeatures = 1000
-sift_nOctaveLayers = 1
-sift_contrastThreshold = 0.1
-sift_edgeThreshold = 10
-sift_sigma = 1.6
-
 # dataframe fields
 dff_query_id = "query_id"
 dff_image_id = "image_id"

@@ -7,7 +7,8 @@ import pickle
 import logging
 import os.path
 from multiprocessing import Queue, Process
-import pimmi.pimmi_parameters as prm
+import pimmi.pimmi_parameters as constants
+from pimmi.cli.config import parameters as prm
 
 grid_bits_per_dim = 10
 grid_d = int(math.pow(2, grid_bits_per_dim))
@@ -118,28 +119,28 @@ def full_id_to_coord(full_id):
 
 def as_point_df(query_id=None, image_id=None, point_id=None, knn_ids=None):
     if query_id is None:
-        return pd.DataFrame(columns=[prm.dff_query_id, prm.dff_image_id, prm.dff_point_id])
+        return pd.DataFrame(columns=[constants.dff_query_id, constants.dff_image_id, constants.dff_point_id])
     else:
         if image_id is not None and point_id is not None:
             return pd.DataFrame([[query_id, image_id, point_id]],
-                                columns=[prm.dff_query_id, prm.dff_image_id, prm.dff_point_id])
+                                columns=[constants.dff_query_id, constants.dff_image_id, constants.dff_point_id])
         elif knn_ids is not None:
             images = full_id_to_image_id(knn_ids)
             points = full_id_to_grid_id(knn_ids)
             return pd.DataFrame({
-                prm.dff_query_id: query_id,
-                prm.dff_image_id: images,
-                prm.dff_point_id: points
+                constants.dff_query_id: query_id,
+                constants.dff_image_id: images,
+                constants.dff_point_id: points
             })
         else:
             return None
 
 
 def extract_sift_mt_function(task_queue, result_queue):
-    for task in iter(task_queue.get, prm.cst_stop):
-        ids, kp, desc, width, height = extract_sift(task[prm.dff_image_path], task[prm.dff_image_id])
-        result_queue.put({prm.dff_image_id: task[prm.dff_image_id], prm.dff_ids: ids, prm.dff_desc: desc,
-                          prm.dff_width: width, prm.dff_height: height})
+    for task in iter(task_queue.get, constants.cst_stop):
+        ids, kp, desc, width, height = extract_sift(task[constants.dff_image_path], task[constants.dff_image_id])
+        result_queue.put({constants.dff_image_id: task[constants.dff_image_id], constants.dff_ids: ids,
+                          constants.dff_desc: desc, constants.dff_width: width, constants.dff_height: height})
     # logger.info("one thread has stopped")
 
 
@@ -155,12 +156,16 @@ def fill_index_mt(index, images, root_path, only_empty_index=False):
     task_launched = 0
     for image_path in images:
         rel_image_path = os.path.relpath(image_path, root_path)
-        index[dff_internal_meta][index[dff_internal_id_generator]] = {prm.dff_image_path: rel_image_path,
-                                                                     prm.dff_width: None,
-                                                                     prm.dff_height: None,
-                                                                     prm.dff_nb_points: None,
-                                                                     prm.dff_image_id: index[dff_internal_id_generator]}
-        task_queue.put({prm.dff_image_path: image_path, prm.dff_image_id: index[dff_internal_id_generator]})
+        index[dff_internal_meta][index[dff_internal_id_generator]] = {
+            constants.dff_image_path: rel_image_path,
+            constants.dff_width: None,
+            constants.dff_height: None,
+            constants.dff_nb_points: None,
+            constants.dff_image_id: index[dff_internal_id_generator]
+        }
+        task_queue.put({
+            constants.dff_image_path: image_path, 
+            constants.dff_image_id: index[dff_internal_id_generator]})
         index[dff_internal_id_generator] = index[dff_internal_id_generator] + 1
         task_launched += 1
         if only_empty_index and task_launched >= prm.nb_images_to_train_index:
@@ -173,13 +178,13 @@ def fill_index_mt(index, images, root_path, only_empty_index=False):
     all_features = None
     for i in range(task_launched):
         result = result_queue.get()
-        image_id = result[prm.dff_image_id]
-        ids = result[prm.dff_ids]
+        image_id = result[constants.dff_image_id]
+        ids = result[constants.dff_ids]
         if ids is not None and len(ids) > 0:
-            desc = result[prm.dff_desc]
-            index[dff_internal_meta][image_id][prm.dff_width] = result[prm.dff_width]
-            index[dff_internal_meta][image_id][prm.dff_height] = result[prm.dff_height]
-            index[dff_internal_meta][image_id][prm.dff_nb_points] = len(ids)
+            desc = result[constants.dff_desc]
+            index[dff_internal_meta][image_id][constants.dff_width] = result[constants.dff_width]
+            index[dff_internal_meta][image_id][constants.dff_height] = result[constants.dff_height]
+            index[dff_internal_meta][image_id][constants.dff_nb_points] = len(ids)
             index[dff_internal_faiss_nb_images] = index[dff_internal_faiss_nb_images] + 1
             if image_id % 100 == 0:
                 logger.info("~ [" + str(image_id) + "] result retrieved from queue : " + str(len(ids)))
@@ -203,7 +208,7 @@ def fill_index_mt(index, images, root_path, only_empty_index=False):
             all_features = None
 
     for i in range(prm.nb_threads):
-        task_queue.put(prm.cst_stop)
+        task_queue.put(constants.cst_stop)
 
     if all_ids is not None:
         all_features = np.vstack(all_features)
@@ -248,7 +253,7 @@ def meta_as_df(meta_json):
 
 def transform_meta_to_df(index):
     index[dff_internal_meta_df] = meta_as_df(index[dff_internal_meta])
-    # index[dff_internal_meta_df][prm.dff_image_path] = "/" + index[dff_internal_meta_df][prm.dff_image_path]
+    # index[dff_internal_meta_df][constants.dff_image_path] = "/" + index[dff_internal_meta_df][constants.dff_image_path]
 
 
 def save_index(index, faiss_file, meta_file):
@@ -300,11 +305,11 @@ def load_index(faiss_file, meta_file, correct=None, only_meta=False):
 
 
 def get_index_images(index, path_prefix):
-    all_path = path_prefix + "/" + index[dff_internal_meta_df][prm.dff_image_path]
-    all_image_ids = index[dff_internal_meta_df][prm.dff_image_id]
+    all_path = path_prefix + "/" + index[dff_internal_meta_df][constants.dff_image_path]
+    all_image_ids = index[dff_internal_meta_df][constants.dff_image_id]
     all_images = pd.DataFrame({
-        prm.dff_image_path: all_path,
-        prm.dff_image_id: all_image_ids
+        constants.dff_image_path: all_path,
+        constants.dff_image_id: all_image_ids
     })
     logger.info("found " + str(len(all_images)) + " images in index")
     return all_images
@@ -317,7 +322,12 @@ def query_index_extract_single_image(index, image_file, relative_image_path, que
 
 def query_index_single_image(index, query_ids, query_desc, query_width, query_height, query_path):
     result_df = pd.DataFrame(
-        columns=[prm.dff_keep, prm.dff_query_nb_points, prm.dff_result_image, prm.dff_nb_match_total])
+        columns=[
+            constants.dff_keep, 
+            constants.dff_query_nb_points, 
+            constants.dff_result_image, 
+            constants.dff_nb_match_total
+        ])
     if len(query_ids) > 0:
         need_to_run_nn_again = True
         current_nn = prm.each_sift_nn
@@ -360,33 +370,36 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                 max_hop -= 1
 
         result_df = pd.DataFrame({
-            prm.dff_keep: True,
-            prm.dff_query_nb_points: len(query_ids),
-            prm.dff_result_image: np.fromiter(result_images.keys(), dtype=int),
-            prm.dff_nb_match_total: np.fromiter(result_images.values(), dtype=int)
+            constants.dff_keep: True,
+            constants.dff_query_nb_points: len(query_ids),
+            constants.dff_result_image: np.fromiter(result_images.keys(), dtype=int),
+            constants.dff_nb_match_total: np.fromiter(result_images.values(), dtype=int)
         })
 
         if prm.do_filter_on_sift_match_ratio:
             min_nb_match = int(math.floor(len(query_ids) * prm.sift_match_ratio_threshold))
-            result_df[prm.dff_keep_smr] = result_df[prm.dff_nb_match_total] >= min_nb_match
-            result_df[prm.dff_keep] = result_df[[prm.dff_keep, prm.dff_keep_smr]].all(axis='columns')
+            result_df[constants.dff_keep_smr] = result_df[constants.dff_nb_match_total] >= min_nb_match
+            result_df[constants.dff_keep] = result_df[[constants.dff_keep, constants.dff_keep_smr]].all(axis='columns')
 
         if prm.do_filter_on_sift_match_nb:
-            result_df[prm.dff_keep_smn] = result_df[prm.dff_nb_match_total] >= prm.sift_match_nb_threshold
-            result_df[prm.dff_keep] = result_df[[prm.dff_keep, prm.dff_keep_smn]].all(axis='columns')
+            result_df[constants.dff_keep_smn] = result_df[constants.dff_nb_match_total] >= prm.sift_match_nb_threshold
+            result_df[constants.dff_keep] = result_df[[constants.dff_keep, constants.dff_keep_smn]].all(axis='columns')
 
         if prm.do_ransac:
             if prm.do_filter_on_sift_match_ratio or prm.do_filter_on_sift_match_nb:
                 kept_matches = kept_matches[
-                    kept_matches[prm.dff_image_id].isin(result_df[result_df[prm.dff_keep]][prm.dff_result_image])]
-            ransac_df = pd.DataFrame({prm.dff_result_image: pd.Series(dtype='int'),
-                                      prm.dff_nb_match_ransac: pd.Series(dtype='int'),
-                                      prm.dff_keep_rns: pd.Series(dtype='bool')})
+                    kept_matches[constants.dff_image_id].isin(
+                        result_df[result_df[constants.dff_keep]][constants.dff_result_image]
+                    )
+                ]
+            ransac_df = pd.DataFrame({constants.dff_result_image: pd.Series(dtype='int'),
+                                      constants.dff_nb_match_ransac: pd.Series(dtype='int'),
+                                      constants.dff_keep_rns: pd.Series(dtype='bool')})
 
-            for matched_image in kept_matches.groupby(prm.dff_image_id):
+            for matched_image in kept_matches.groupby(constants.dff_image_id):
                 matches = matched_image[1]
-                query_points = grid_id_to_coord(matches[prm.dff_query_id].values).reshape(-1, 1, 2)
-                matched_points = grid_id_to_coord(matches[prm.dff_point_id].values).reshape(-1, 1, 2)
+                query_points = grid_id_to_coord(matches[constants.dff_query_id].values).reshape(-1, 1, 2)
+                matched_points = grid_id_to_coord(matches[constants.dff_point_id].values).reshape(-1, 1, 2)
                 # ignored, mask = cv.findHomography(srcPoints=query_points, dstPoints=matched_points, method=cv.RANSAC,
                 #                                   ransacReprojThreshold=5.0)
                 # ignored, mask = cv.findEssentialMat(query_points, matched_points, method=cv.RANSAC, threshold=3.0,
@@ -397,43 +410,50 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                 else:
                     nb_match_after_ransac = sum(mask.ravel().tolist())
                 ransac_df = pd.concat([ransac_df,
-                                       pd.DataFrame([[matched_image[0], nb_match_after_ransac,
-                                                      nb_match_after_ransac >= prm.sift_match_nb_after_ransac_threshold]],
-                                                    columns=[prm.dff_result_image, prm.dff_nb_match_ransac,
-                                                             prm.dff_keep_rns])])
+                                       pd.DataFrame([[matched_image[0], 
+                                                      nb_match_after_ransac,
+                                                      nb_match_after_ransac >= prm.sift_match_nb_after_ransac_threshold
+                                                      ]
+                                                     ],
+                                                    columns=[constants.dff_result_image, constants.dff_nb_match_ransac,
+                                                             constants.dff_keep_rns])])
 
-            result_df = result_df.join(ransac_df.set_index(prm.dff_result_image), on=prm.dff_result_image)
-            result_df[prm.dff_nb_match_ransac] = result_df[prm.dff_nb_match_ransac].fillna(0)
-            result_df[prm.dff_ransac_ratio] = result_df[prm.dff_nb_match_ransac] / result_df[prm.dff_nb_match_total]
-            result_df[prm.dff_keep] = result_df[[prm.dff_keep, prm.dff_keep_rns]].all(axis="columns")
+            result_df = result_df.join(ransac_df.set_index(constants.dff_result_image), on=constants.dff_result_image)
+            result_df[constants.dff_nb_match_ransac] = result_df[constants.dff_nb_match_ransac].fillna(0)
+            result_df[constants.dff_ransac_ratio] = \
+                result_df[constants.dff_nb_match_ransac] / result_df[constants.dff_nb_match_total]
+            result_df[constants.dff_keep] = result_df[[constants.dff_keep, constants.dff_keep_rns]].all(axis="columns")
 
-        result_df = pd.merge(result_df, index[dff_internal_meta_df], how="inner", left_on=prm.dff_result_image,
-                             right_on=prm.dff_image_id)
-        result_df = result_df.drop(columns=prm.dff_image_id).rename(columns={
-            prm.dff_image_path: prm.dff_result_path,
-            prm.dff_width: prm.dff_result_width,
-            prm.dff_height: prm.dff_result_height,
-            prm.dff_nb_points: prm.dff_result_nb_points
+        result_df = pd.merge(result_df, index[dff_internal_meta_df], how="inner", left_on=constants.dff_result_image,
+                             right_on=constants.dff_image_id)
+        result_df = result_df.drop(columns=constants.dff_image_id).rename(columns={
+            constants.dff_image_path: constants.dff_result_path,
+            constants.dff_width: constants.dff_result_width,
+            constants.dff_height: constants.dff_result_height,
+            constants.dff_nb_points: constants.dff_result_nb_points
         })
-        result_df[prm.dff_query_path] = query_path
-        result_df[prm.dff_query_width] = query_width
-        result_df[prm.dff_query_height] = query_height
-        result_df = pd.merge(result_df, index[dff_internal_meta_df][[prm.dff_image_path, prm.dff_image_id]], how="left",
-                             left_on=prm.dff_query_path, right_on=prm.dff_image_path)
-        result_df = result_df.drop(columns=prm.dff_image_path).rename(columns={
-            prm.dff_image_id: prm.dff_query_image
+        result_df[constants.dff_query_path] = query_path
+        result_df[constants.dff_query_width] = query_width
+        result_df[constants.dff_query_height] = query_height
+        result_df = pd.merge(result_df, index[dff_internal_meta_df][[constants.dff_image_path, constants.dff_image_id]], how="left",
+                             left_on=constants.dff_query_path, right_on=constants.dff_image_path)
+        result_df = result_df.drop(columns=constants.dff_image_path).rename(columns={
+            constants.dff_image_id: constants.dff_query_image
         })
 
         if prm.remove_query_from_results:
-            result_df.loc[result_df[prm.dff_result_path] == query_path, prm.dff_keep] = False
+            result_df.loc[result_df[constants.dff_result_path] == query_path, constants.dff_keep] = False
     return result_df
 
 
 def query_index_mt_function(index, task_queue, result_queue):
-    for task in iter(task_queue.get, prm.cst_stop):
-        result_df = query_index_extract_single_image(index, task[prm.dff_image_path], task[prm.dff_image_relative_path],
-                                                     task[prm.dff_query_id], pack=task[dff_internal_pack_id])
-        result_queue.put({prm.dff_query_id: task[prm.dff_query_id], dff_internal_result_df: result_df})
+    for task in iter(task_queue.get, constants.cst_stop):
+        result_df = query_index_extract_single_image(
+            index,
+            task[constants.dff_image_path],
+            task[constants.dff_image_relative_path],
+                                                     task[constants.dff_query_id], pack=task[dff_internal_pack_id])
+        result_queue.put({constants.dff_query_id: task[constants.dff_query_id], dff_internal_result_df: result_df})
     # logger.info("one thread has stopped")
 
 
@@ -448,10 +468,10 @@ def query_index_mt(index, images, root_path, pack=-1):
 
     task_launched = 0
     for row, image in images.iterrows():
-        image_path = image[prm.dff_image_path]
+        image_path = image[constants.dff_image_path]
         rel_image_path = os.path.relpath(image_path, root_path)
-        task_queue.put({prm.dff_image_path: image_path, prm.dff_image_relative_path: rel_image_path,
-                        prm.dff_query_id: image[prm.dff_image_id], dff_internal_pack_id: pack})
+        task_queue.put({constants.dff_image_path: image_path, constants.dff_image_relative_path: rel_image_path,
+                        constants.dff_query_id: image[constants.dff_image_id], dff_internal_pack_id: pack})
         task_launched += 1
 
     all_result = []
@@ -461,7 +481,7 @@ def query_index_mt(index, images, root_path, pack=-1):
 
         if result_df is None or len(result_df) == 0:
             continue
-        result_df = result_df[result_df[prm.dff_keep]]
+        result_df = result_df[result_df[constants.dff_keep]]
         if result_df is None or len(result_df) == 0:
             continue
         all_result.append(result_df)
@@ -472,6 +492,6 @@ def query_index_mt(index, images, root_path, pack=-1):
     if all_result is not None:
         all_result[dff_internal_pack_id] = pack
     for i in range(prm.nb_threads):
-        task_queue.put(prm.cst_stop)
+        task_queue.put(constants.cst_stop)
 
     return all_result

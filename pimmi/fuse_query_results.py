@@ -3,7 +3,7 @@ import csv
 import glob
 import pickle
 import logging
-import pimmi_parameters as prm
+import pimmi.pimmi_parameters as constants
 import pimmi
 
 # TODO parameters from command line, fuse with generate_cluster_viz
@@ -29,8 +29,8 @@ for file in sorted(glob.glob(results_pattern)):
     all_similarities.append(similarities)
 logger.info("Concatenating results from " + str(len(all_similarities)) + " files")
 all_similarities = pd.concat(all_similarities)
-all_similarities[prm.dff_result_path] = "/" + all_similarities[prm.dff_result_path]
-all_similarities[prm.dff_query_path] = "/" + all_similarities[prm.dff_query_path]
+all_similarities[constants.dff_result_path] = "/" + all_similarities[constants.dff_result_path]
+all_similarities[constants.dff_query_path] = "/" + all_similarities[constants.dff_query_path]
 # all_similarities = all_similarities.astype({prm.dff_query_image: int, prm.dff_result_image: int})
 with open(all_results_file, 'wb') as f:
     pickle.dump(all_similarities, f, pickle.HIGHEST_PROTOCOL)

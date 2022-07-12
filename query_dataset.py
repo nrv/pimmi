@@ -1,8 +1,9 @@
 import logging
 import csv
 import pimmi
-import pimmi_parameters as prm
-import pimmi_toolbox as tbx
+from pimmi.cli.config import parameters as prm
+import pimmi.pimmi_parameters as constants
+import pimmi.toolbox as tbx
 import argparse
 
 nb_per_split = 10000
@@ -10,7 +11,15 @@ nb_per_split = 10000
 logger = logging.getLogger("query")
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument('--thread', required=False, type=int, help="nb threads, default : " + str(prm.nb_threads))
+config_dict = prm.load_config_file("pimmi/cli/config.yml")
+for param, value in config_dict.items():
+    parser.add_argument(
+        "--{}".format(param),
+        type=type(value),
+        default=value,
+        help=argparse.SUPPRESS
+    )
+parser.add_argument('--thread', required=False, type=int, help="nb threads, default : " + str(config_dict["nb_threads"]))
 parser.add_argument('--nb_img', required=False, type=int, help="nb images to query the index")
 parser.add_argument('--nb_per_split', required=False, type=int, help="nb images to query per pack")
 parser.add_argument('--load_faiss', required=True, help="faiss index file to load")
@@ -21,7 +30,7 @@ image_source.add_argument('--images_dir', required=False, help="query all images
 image_source.add_argument('--images_meta', required=False, help="query all images from this file")
 image_source.add_argument('--images_mining', required=False, action='store_true', help="query all images from the index")
 parser.add_argument('--images_root', required=False, help="root path for imagers relative paths")
-args = parser.parse_args()
+args = parser.parse_args(namespace=prm)
 
 
 if __name__ == '__main__':
@@ -74,13 +83,20 @@ if __name__ == '__main__':
 
     logger.info("total number of queries " + str(len(images)))
 
-    images = images.sort_values(by=prm.dff_image_path)
+    images = images.sort_values(by=constants.dff_image_path)
     queries = tbx.split_pack(images, nb_per_split)
     for pack in queries:
-        pack_result_file = args.save_mining + "_" + str(pack[prm.dff_pack_id]).zfill(6) + ".csv"
-        logger.info("query " + str(len(pack[prm.dff_pack_files])) + " files from pack " +
-                    str(pack[prm.dff_pack_id]) + " -> " + pack_result_file)
-        query_result = pimmi.query_index_mt(index, pack[prm.dff_pack_files], images_root, pack=pack[prm.dff_pack_id])
-        query_result = query_result.sort_values(by=[prm.dff_query_path, prm.dff_nb_match_ransac, prm.dff_ransac_ratio],
-                                                ascending=False)
+        pack_result_file = args.save_mining + "_" + str(pack[constants.dff_pack_id]).zfill(6) + ".csv"
+        logger.info("query " + str(len(pack[constants.dff_pack_files])) + " files from pack " +
+                    str(pack[constants.dff_pack_id]) + " -> " + pack_result_file)
+        query_result = pimmi.query_index_mt(
+            index,
+            pack[constants.dff_pack_files],
+            images_root,
+            pack=pack[constants.dff_pack_id]
+        )
+        query_result = query_result.sort_values(
+            by=[constants.dff_query_path, constants.dff_nb_match_ransac, constants.dff_ransac_ratio],
+            ascending=False
+        )
         query_result.to_csv(pack_result_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
