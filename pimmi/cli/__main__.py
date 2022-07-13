@@ -42,6 +42,8 @@ def load_cli_parameters():
     parser_fill.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
                                                             "Defaults to './index'", default="./index")
     parser_fill.add_argument("--load-faiss", action="store_true", default=False)
+    parser_fill.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to "
+                                                             "create a config file template.")
     parser_fill.set_defaults(func=fill)
 
     # QUERY command
@@ -62,11 +64,21 @@ def load_cli_parameters():
     return cli_parameters
 
 
-def fill(image_dir, index_name, index_path, load_faiss, **kwargs):
+def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
 
     if not os.path.isdir(image_dir):
         logger.error("The provided image-dir is not a directory.")
         sys.exit(1)
+
+    if config_path:
+        try:
+            load_custom_config(config_path)
+        except AttributeError as wrong_param:
+            print("pimmi: error: unrecognized argument in custom config file: {}. "
+                  "Use pimmi config-params to display all existing parameters."
+                  .format(wrong_param))
+            parser.print_usage()
+            sys.exit(1)
 
     if not index_name:
         index_name = os.path.basename(os.path.normpath(image_dir))
@@ -98,7 +110,6 @@ def fill(image_dir, index_name, index_path, load_faiss, **kwargs):
     filled_faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
     filled_faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
     save_index(filled_index, filled_faiss_index, filled_faiss_meta)
-
 
 def query(index_name, image_dir, index_path, index_type, nb_img, nb_per_split, simple, **kwargs):
     faiss_index = os.path.join(index_path, ".".join([index_name, index_type, "faiss"]))
@@ -132,6 +143,18 @@ def create_config(path, **kwargs):
     shutil.copyfile(config_path, path)
     print("Created config file {}".format(path))
 
+
+def load_custom_config(config_path):
+    if os.path.isfile(config_path):
+        custom_config_dict = prm.load_config_file(config_path)
+        for param, value in custom_config_dict.items():
+            if hasattr(prm, param):
+                setattr(prm, param, value)
+            else:
+                raise AttributeError(param)
+    else:
+        logger.error("The provided config file does not exist.")
+        sys.exit(1)
 
 def main():
     cli_params = load_cli_parameters()
