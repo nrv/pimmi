@@ -8,6 +8,7 @@
 import os
 import csv
 import sys
+import shutil
 import logging
 import argparse
 
@@ -17,7 +18,8 @@ from pimmi.cli.config import parameters as prm
 
 logger = logging.getLogger(__name__)
 parser = argparse.ArgumentParser(prog="pimmi", description='PIMMI: a command line tool for image mining.')
-config_dict = prm.load_config_file("pimmi/cli/config.yml")
+config_path = os.path.join(os.path.dirname(__file__), "config.yml")
+config_dict = prm.load_config_file(config_path)
 for param, value in config_dict.items():
     parser.add_argument(
         "--{}".format(param),
@@ -46,9 +48,15 @@ def load_cli_parameters():
     parser_query = subparsers.add_parser('query', help="Query some index.")
 
     # CONFIG-PARAMS command
-    parser_config = subparsers.add_parser('config-params', help="List all arguments that can be passed to pimmi to "
+    parser_config_params = subparsers.add_parser('config-params', help="List all arguments that can be passed to pimmi to "
                                                                 "override the standard configuration file.")
-    parser_config.set_defaults(func=config_params)
+    parser_config_params.set_defaults(func=config_params)
+
+    # CREATE-CONFIG command
+    parser_create_config = subparsers.add_parser('create-config', help="Create a custom config file. Usage: 'pimmi "
+                                                                       "create-config my_config_file.yml'")
+    parser_create_config.add_argument('path', type=str, help="Path of the file to be created.")
+    parser_create_config.set_defaults(func=create_config)
 
     cli_parameters = vars(parser.parse_args(namespace=prm))
     return cli_parameters
@@ -118,6 +126,11 @@ def query(index_name, image_dir, index_path, index_type, nb_img, nb_per_split, s
 def config_params(**kwargs):
     for param, value in config_dict.items():
         print("--{}: {}".format(param, value))
+
+
+def create_config(path, **kwargs):
+    shutil.copyfile(config_path, path)
+    print("Created config file {}".format(path))
 
 
 def main():
