@@ -26,6 +26,7 @@ for param, value in config_dict.items():
         help=argparse.SUPPRESS
     )
 
+
 def load_cli_parameters():
     subparsers = parser.add_subparsers(title="commands")
 
@@ -128,6 +129,5 @@ def main():
         parser.print_help()
 
 
-
-
-
+if __name__ == '__main__':
+    main()
