@@ -1,11 +1,11 @@
-import pimmi.pimmi_parameters as constants
 import logging
 import pickle
 import pandas as pd
 import numpy as np
 import igraph as ig
-import json
-import pimmi
+import pimmi.pimmi as pimmi
+import pimmi.pimmi_parameters as constants
+
 
 # TODO parameters from command line
 logger = logging.getLogger("gener")

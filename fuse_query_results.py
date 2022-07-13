@@ -4,7 +4,6 @@ import glob
 import pickle
 import logging
 import pimmi.pimmi_parameters as constants
-import pimmi
 
 # TODO parameters from command line, fuse with generate_cluster_viz
 logger = logging.getLogger("fuse ")
