@@ -2,18 +2,27 @@ import glob
 import json
 import math
 import pandas as pd
-import pimmi.pimmi_parameters as prm
+import pimmi_parameters as prm
 import logging
 
 logger = logging.getLogger("tools")
 
 
 def get_all_images(image_dirs):
-    files = []
+    all_path = []
     for image_dir in image_dirs:
-        files.extend(glob.glob(image_dir + "/**/*.jpg", recursive=True))
-        files.extend(glob.glob(image_dir + "/**/*.png", recursive=True))
-    return files
+        all_path.extend(glob.glob(image_dir + "/**/*.jpg", recursive=True))
+        all_path.extend(glob.glob(image_dir + "/**/*.png", recursive=True))
+
+    all_path.sort()
+
+    all_image_ids = [i for i in range(len(all_path))]
+    all_images = pd.DataFrame({
+        prm.dff_image_path: all_path,
+        prm.dff_image_id: all_image_ids
+    })
+
+    return all_images
 
 
 def parse_mex(file):

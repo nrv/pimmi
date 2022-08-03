@@ -3,7 +3,7 @@
 # =============================================================================
 #
 
-from pimmi.pimmi import (
+from pimmi.pimmi_utils import (
     load_index,
     save_index,
     fill_index_mt,

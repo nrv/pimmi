@@ -11,7 +11,7 @@ import sys
 import click
 import logging
 
-from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
+from pimmi.pimmi_utils import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
 import pimmi.pimmi_parameters as prm
 import pimmi.toolbox as tbx
 

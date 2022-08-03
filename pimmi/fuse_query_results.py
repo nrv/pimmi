@@ -9,8 +9,11 @@ import pimmi
 # TODO parameters from command line, fuse with generate_cluster_viz
 logger = logging.getLogger("fuse ")
 
-results_pattern = "index/dataset1.ivf1024.mining_0*.csv"
-all_results_file = "index/dataset1.ivf1024.mining.all"
+# results_pattern = "index/dataset1.ivf1024.mining_0*.csv"
+# all_results_file = "index/dataset1.ivf1024.mining.all"
+
+results_pattern = "/rex/local/otmedia/tweetimages/20201109/montage_graph/mining_00*.csv"
+all_results_file = "/rex/local/otmedia/tweetimages/20201109/montage_graph/mining.all"
 
 
 if __name__ == '__main__':

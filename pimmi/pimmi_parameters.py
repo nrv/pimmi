@@ -72,3 +72,5 @@ mex_sha256 = "sha256"
 
 # other string constants
 cst_stop = "STOP"
+
+debug_plot_subqueries = False

@@ -8,3 +8,4 @@ leidenalg
 opencv-python
 twine
 wheel
+pytest

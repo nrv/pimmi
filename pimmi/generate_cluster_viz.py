@@ -5,14 +5,14 @@ import pandas as pd
 import numpy as np
 import igraph as ig
 import json
-import pimmi
+import pimmi_utils as put
 
 # TODO parameters from command line
 logger = logging.getLogger("gener")
 
-merged_meta_file = "index/dataset1.ivf1024.meta"
-all_results_file = "index/dataset1.ivf1024.mining.all"
-viz_data_file = "index/dataset1.ivf1024.mining.clusters.json"
+merged_meta_file = "/rex/local/otmedia/tweetimages/20201109/montage_graph/index.ivf1024.meta"
+all_results_file = "/rex/local/otmedia/tweetimages/20201109/montage_graph/mining.all"
+viz_data_file = "/rex/local/otmedia/tweetimages/20201109/montage_graph/mining.clusters.json"
 
 
 def from_cluster_2col_table_to_list(data, keycol, valcol):
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     with open(merged_meta_file, 'rb') as f:
         all_meta = pickle.load(f)
     f.close()
-    all_meta = pimmi.meta_as_df(all_meta)
+    all_meta = put.meta_as_df(all_meta)
     logger.info("all_meta : %d", len(all_meta))
 
     # all_meta = all_meta.sort_values(by=[prm.dff_nb_points], ascending=True)
@@ -72,7 +72,6 @@ if __name__ == '__main__':
     logger.info("Number of edges in the graph: %d", g.ecount())
     logger.info("Is the graph directed: %d", g.is_directed())
     logger.info("Maximum degree in the graph: %d", g.maxdegree())
-
 
     comp = g.components(mode="weak")
     logger.info("Connected components in the graph: %d", len(comp))

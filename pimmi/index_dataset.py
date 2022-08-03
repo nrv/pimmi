@@ -1,7 +1,7 @@
 import logging
 import pimmi
 import pimmi_parameters as prm
-import pimmi_toolbox as tbx
+import toolbox as tbx
 import argparse
 
 logger = logging.getLogger("index")
@@ -60,6 +60,7 @@ if __name__ == '__main__':
     if args.images_dir:
         logger.info("listing images recursively from : " + args.images_dir)
         images = tbx.get_all_images([args.images_dir])
+        logger.info("  ... found " + str(len(images)) + " files")
         images_root = args.images_dir
     if args.images_meta:
         if not args.images_meta_root:

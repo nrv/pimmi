@@ -1,9 +1,10 @@
 import logging
 import csv
 import pimmi
+import toolbox as tbx
 import pimmi_parameters as prm
-import pimmi_toolbox as tbx
 import argparse
+import pandas as pd
 
 nb_per_split = 10000
 
@@ -16,6 +17,7 @@ parser.add_argument('--nb_per_split', required=False, type=int, help="nb images 
 parser.add_argument('--load_faiss', required=True, help="faiss index file to load")
 parser.add_argument('--save_mining', required=True, help="mining file to save")
 parser.add_argument('--simple', required=False, action='store_true', help="use only very simple query params")
+parser.add_argument('--sub', required=False, action='store_true', help="sub-image matching")
 image_source = parser.add_mutually_exclusive_group()
 image_source.add_argument('--images_dir', required=False, help="query all images from this directory")
 image_source.add_argument('--images_meta', required=False, help="query all images from this file")
@@ -46,7 +48,6 @@ if __name__ == '__main__':
 
     if args.images_dir:
         logger.info("listing images recursively from : " + args.images_dir)
-        # TODO: change to (id, path) df
         images = tbx.get_all_images([args.images_dir])
         images_root = args.images_dir
     if args.images_meta:
@@ -74,13 +75,23 @@ if __name__ == '__main__':
 
     logger.info("total number of queries " + str(len(images)))
 
-    images = images.sort_values(by=prm.dff_image_path)
     queries = tbx.split_pack(images, nb_per_split)
+
+    glb_sub_result_df = None
     for pack in queries:
         pack_result_file = args.save_mining + "_" + str(pack[prm.dff_pack_id]).zfill(6) + ".csv"
         logger.info("query " + str(len(pack[prm.dff_pack_files])) + " files from pack " +
                     str(pack[prm.dff_pack_id]) + " -> " + pack_result_file)
-        query_result = pimmi.query_index_mt(index, pack[prm.dff_pack_files], images_root, pack=pack[prm.dff_pack_id])
+        query_result, query_sub_result = pimmi.query_index_mt(index, pack[prm.dff_pack_files], images_root,
+                                            pack=pack[prm.dff_pack_id], sub=args.sub)
         query_result = query_result.sort_values(by=[prm.dff_query_path, prm.dff_nb_match_ransac, prm.dff_ransac_ratio],
                                                 ascending=False)
         query_result.to_csv(pack_result_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
+
+        if glb_sub_result_df is None:
+            glb_sub_result_df = query_sub_result
+        else:
+            glb_sub_result_df = pd.concat([glb_sub_result_df, query_sub_result])
+
+    if args.sub:
+        glb_sub_result_df.to_csv(args.save_mining + "_sub.csv", index=False, quoting=csv.QUOTE_NONNUMERIC)

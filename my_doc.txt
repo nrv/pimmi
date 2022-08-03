@@ -1,0 +1,4 @@
+pimmi fill --index-path /rex/local/otmedia/tweetimages/20201109/pimmi --index-type "OPQ16_64,IVF4096_HNSW32,PQ16" /rex/local/otmedia/tweetimages/20201109/images pq16
+
+pimmi query --index-path /rex/local/otmedia/tweetimages/20201109/pimmi --index-type "OPQ16_64,IVF4096_HNSW32,PQ16" pq16 /home/nherve/Travail/Workspaces/pimmi/demo_dataset/images
+

@@ -1,13 +1,23 @@
-import math
 import numpy as np
 import pandas as pd
 import cv2 as cv
 import faiss
+import math
 import pickle
 import logging
 import os.path
 from multiprocessing import Queue, Process
+
+from numpy.ma import clump_masked
+
 import pimmi.pimmi_parameters as prm
+import itertools
+
+import igraph as ig
+import matplotlib.pyplot as pyplot
+import matplotlib.patches as patches
+
+glb_sub_result_df = None
 
 grid_bits_per_dim = 10
 grid_d = int(math.pow(2, grid_bits_per_dim))
@@ -20,6 +30,7 @@ dff_internal_meta = "meta"
 dff_internal_id_generator = "id_generator"
 dff_internal_pack_id = "pack_id"
 dff_internal_result_df = "result_df"
+dff_internal_sub_result_df = "sub_result_df"
 dff_internal_faiss = "faiss"
 dff_internal_faiss_type = "faiss_type"
 dff_internal_faiss_nb_images = "faiss_nb_images"
@@ -153,7 +164,8 @@ def fill_index_mt(index, images, root_path, only_empty_index=False):
         Process(target=extract_sift_mt_function, args=(task_queue, result_queue)).start()
 
     task_launched = 0
-    for image_path in images:
+    for row, image in images.iterrows():
+        image_path = image[prm.dff_image_path]
         rel_image_path = os.path.relpath(image_path, root_path)
         index[dff_internal_meta][index[dff_internal_id_generator]] = {prm.dff_image_path: rel_image_path,
                                                                      prm.dff_width: None,
@@ -310,12 +322,14 @@ def get_index_images(index, path_prefix):
     return all_images
 
 
-def query_index_extract_single_image(index, image_file, relative_image_path, query_id=0, pack=-1):
+def query_index_extract_single_image(index, image_file, relative_image_path, query_id=0, pack=-1, sub=False):
     query_ids, query_kp, query_desc, query_width, query_height = extract_sift(image_file, query_id, pack=pack)
-    return query_index_single_image(index, query_ids, query_desc, query_width, query_height, relative_image_path)
+    return query_index_single_image(index, query_ids, query_desc, query_width, query_height, relative_image_path, sub=sub)
 
 
-def query_index_single_image(index, query_ids, query_desc, query_width, query_height, query_path):
+def query_index_single_image(index, query_ids, query_desc, query_width, query_height, query_path, sub=False):
+    # logger.info("~ query [sub: "+str(sub)+"] " + query_path + " - " + str(len(query_ids)))
+    sub_result_df = None
     result_df = pd.DataFrame(
         columns=[prm.dff_keep, prm.dff_query_nb_points, prm.dff_result_image, prm.dff_nb_match_total])
     if len(query_ids) > 0:
@@ -383,6 +397,8 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                                       prm.dff_nb_match_ransac: pd.Series(dtype='int'),
                                       prm.dff_keep_rns: pd.Series(dtype='bool')})
 
+            query_points_pairs_nb = dict()
+            query_points_pairs_score = dict()
             for matched_image in kept_matches.groupby(prm.dff_image_id):
                 matches = matched_image[1]
                 query_points = grid_id_to_coord(matches[prm.dff_query_id].values).reshape(-1, 1, 2)
@@ -396,11 +412,97 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                     nb_match_after_ransac = 0
                 else:
                     nb_match_after_ransac = sum(mask.ravel().tolist())
+                keep_rns = nb_match_after_ransac >= prm.sift_match_nb_after_ransac_threshold
                 ransac_df = pd.concat([ransac_df,
-                                       pd.DataFrame([[matched_image[0], nb_match_after_ransac,
-                                                      nb_match_after_ransac >= prm.sift_match_nb_after_ransac_threshold]],
+                                       pd.DataFrame([[matched_image[0], nb_match_after_ransac, keep_rns]],
                                                     columns=[prm.dff_result_image, prm.dff_nb_match_ransac,
                                                              prm.dff_keep_rns])])
+                # Sub queries
+                if keep_rns and sub:
+                    # logger.info("    . sub query [" + str(matched_image[0]) + "] " + str(nb_match_after_ransac) + " matched points")
+                    all_matched_query_points = set()
+                    for query_id, matched in zip(matches[prm.dff_query_id].values, mask):
+                        if matched[0] == 1:
+                            all_matched_query_points.add(query_id)
+                    all_matched_query_points = list(all_matched_query_points)
+                    all_matched_query_points.sort()
+
+                    weight = math.log2(nb_match_after_ransac)
+                    for i in range(len(all_matched_query_points) - 1):
+                        mi = all_matched_query_points[i]
+                        for j in range(i + 1, len(all_matched_query_points)):
+                            mj = all_matched_query_points[j]
+                            mij = str(mi) + "-" + str(mj)
+                            query_points_pairs_nb[mij] = query_points_pairs_nb.get(mij, 0) + 1
+                            query_points_pairs_score[mij] = query_points_pairs_score.get(mij, 0) + weight
+            if sub:
+                # logger.info("    . sub query pairs : " + str(len(query_points_pairs_nb)))
+                # TODO seuillage, graphe CC ?
+                tmp_from = []
+                tmp_to = []
+                tmp_nbs = []
+                tmp_scores = []
+                for pair, nb in query_points_pairs_nb.items():
+                    spl = pair.split("-")
+                    tmp_from.append(spl[0])
+                    tmp_to.append(spl[1])
+                    tmp_nbs.append(nb)
+                    tmp_scores.append(query_points_pairs_score[pair])
+
+                sub_graph_df = pd.DataFrame({prm.dff_query_image: query_path, "from": tmp_from, "to": tmp_to, "nb": tmp_nbs, "score": tmp_scores})
+                g = ig.Graph.TupleList([(row["from"], row["to"], row["score"])
+                                    for index, row in sub_graph_df.iterrows()], directed=False, weights=True)
+                # logger.info("------")
+                # logger.info("Number of vertices in the graph: %d", g.vcount())
+                # logger.info("Number of edges in the graph: %d", g.ecount())
+                # logger.info("Is the graph directed: %d", g.is_directed())
+                # logger.info("Maximum degree in the graph: %d", g.maxdegree())
+
+                if prm.debug_plot_subqueries:
+                    layout = g.layout("kamada_kawai")
+                    ig.plot(g, layout=layout)
+
+                comp = g.components(mode="weak")
+                logger.info("Connected components in the graph     : %d", len(comp))
+                sub_result_df = pd.DataFrame(list(zip(itertools.repeat(query_path), [int(item) for item in g.vs["name"]], comp.membership)), columns=['query_path', 'point_id', 'cluster'])
+                kept_clusters = []
+                for cluster in sub_result_df.groupby('cluster'):
+                    if len(cluster[1]['point_id']) >= prm.sift_match_nb_after_ransac_threshold:
+                        kept_clusters.append(cluster[0])
+                logger.info("Kept connected components in the graph: %d", len(kept_clusters))
+                # logger.info("Points in clusters : %d", len(clusters))
+
+                if prm.debug_plot_subqueries:
+                    # img = pyplot.imread("/rex/local/otmedia/tweetimages/20201109/montage_queries/" + query_path)
+                    # img = cv.imread("/rex/local/otmedia/tweetimages/20201109/montage_queries/" + query_path, cv.IMREAD_GRAYSCALE)
+                    img = cv.imread("/rex/local/otmedia/tweetimages/20201109/montage_graph/dataset/linked/" + query_path,
+                                    cv.IMREAD_GRAYSCALE)
+                    img, resized = resize_if_needed(img)
+
+                    figure, ax = pyplot.subplots(1)
+                    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+                    ax.imshow(img)
+
+                    all_points = full_id_to_coord(query_ids)
+                    ax.plot(all_points[:, 0], all_points[:, 1], 'b.')
+
+                    cluster_id = 0
+                    for cluster in sub_result_df.groupby('cluster'):
+                        cluster_id = cluster_id + 1
+                        ids = cluster[1]['point_id'].values
+                        logger.info("    . cluster %d : %d/%d", cluster_id, len(ids), len(query_ids))
+                        if len(ids) >= prm.sift_match_nb_after_ransac_threshold:
+                            points = full_id_to_coord(ids)
+                            xs = points[:, 0]
+                            ys = points[:, 1]
+                            ax.plot(xs, ys, 'r.')
+                            x = min(xs)
+                            y = min(ys)
+                            rect = patches.Rectangle((x, y), max(xs) - x, max(ys) - y, linewidth=1, edgecolor='r', facecolor='none')
+                            ax.add_patch(rect)
+                    pyplot.show()
+
+            # ---
 
             result_df = result_df.join(ransac_df.set_index(prm.dff_result_image), on=prm.dff_result_image)
             result_df[prm.dff_nb_match_ransac] = result_df[prm.dff_nb_match_ransac].fillna(0)
@@ -426,25 +528,25 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
 
         if prm.remove_query_from_results:
             result_df.loc[result_df[prm.dff_result_path] == query_path, prm.dff_keep] = False
-    return result_df
+    return result_df, sub_result_df
 
 
-def query_index_mt_function(index, task_queue, result_queue):
+def query_index_mt_function(index, task_queue, result_queue, sub):
     for task in iter(task_queue.get, prm.cst_stop):
-        result_df = query_index_extract_single_image(index, task[prm.dff_image_path], task[prm.dff_image_relative_path],
-                                                     task[prm.dff_query_id], pack=task[dff_internal_pack_id])
-        result_queue.put({prm.dff_query_id: task[prm.dff_query_id], dff_internal_result_df: result_df})
+        result_df, sub_result_df = query_index_extract_single_image(index, task[prm.dff_image_path], task[prm.dff_image_relative_path],
+                                                     task[prm.dff_query_id], pack=task[dff_internal_pack_id], sub=sub)
+        result_queue.put({prm.dff_query_id: task[prm.dff_query_id], dff_internal_result_df: result_df, dff_internal_sub_result_df: sub_result_df})
     # logger.info("one thread has stopped")
 
 
-def query_index_mt(index, images, root_path, pack=-1):
+def query_index_mt(index, images, root_path, pack=-1, sub=False):
     init_sift()
 
     task_queue = Queue()
     result_queue = Queue()
     for i in range(prm.nb_threads):
         # logger.info("launching thread %d", i)
-        Process(target=query_index_mt_function, args=(index, task_queue, result_queue)).start()
+        Process(target=query_index_mt_function, args=(index, task_queue, result_queue, sub)).start()
 
     task_launched = 0
     for row, image in images.iterrows():
@@ -455,6 +557,7 @@ def query_index_mt(index, images, root_path, pack=-1):
         task_launched += 1
 
     all_result = []
+    all_sub_result = []
     for i in range(task_launched):
         result = result_queue.get()
         result_df = result[dff_internal_result_df]
@@ -466,12 +569,19 @@ def query_index_mt(index, images, root_path, pack=-1):
             continue
         all_result.append(result_df)
 
+        sub_result_df = result[dff_internal_sub_result_df]
+        if sub_result_df is None or len(sub_result_df) == 0:
+            continue
+        all_sub_result.append(sub_result_df)
+
     logger.info("~ concatenating results")
     all_result = pd.concat(all_result)
+    if sub:
+        all_sub_result = pd.concat(all_sub_result)
 
     if all_result is not None:
         all_result[dff_internal_pack_id] = pack
     for i in range(prm.nb_threads):
         task_queue.put(prm.cst_stop)
 
-    return all_result
+    return all_result, all_sub_result
