@@ -17,6 +17,8 @@ sift_match_nb_after_ransac_threshold: 5
 do_ransac: True
 remove_query_from_results: True
 
+nb_img: 0
+
 sift_nfeatures: 1000
 sift_nOctaveLayers: 1
 sift_contrastThreshold: 0.1
