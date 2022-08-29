@@ -23,12 +23,11 @@ config_path = os.path.join(os.path.dirname(__file__), "config.yml")
 config_dict = prm.load_config_file(config_path)
 for param, value in config_dict.items():
     parser.add_argument(
-        "--{}".format(param),
+        "--{}".format(param.replace("_", "-")),
         type=type(value),
         default=value,
         help=argparse.SUPPRESS
     )
-
 
 def load_cli_parameters():
     subparsers = parser.add_subparsers(title="commands")
@@ -55,8 +54,7 @@ def load_cli_parameters():
     parser_query.add_argument('index_name', type=str, metavar='index-name')
     parser_query.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
                                                             "Defaults to './index'", default="./index")
-    parser_query.add_argument("--nb-img", type=int, required=False, help="Number of images to query the index")
-    parser_query.add_argument("--nb_per_split", default=10000, type=int, help="Number of images to query per pack")
+    parser_query.add_argument("--nb-per-split", default=10000, type=int, help="Number of images to query per pack")
     parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to "
                                                              "create a config file template.")
     parser_query.set_defaults(func=query)
@@ -82,15 +80,7 @@ def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
         logger.error("The provided image-dir is not a directory.")
         sys.exit(1)
 
-    if config_path:
-        try:
-            load_custom_config(config_path)
-        except AttributeError as wrong_param:
-            print("pimmi: error: unrecognized argument in custom config file: {}. "
-                  "Use pimmi config-params to display all existing parameters."
-                  .format(wrong_param))
-            parser.print_usage()
-            sys.exit(1)
+    check_custom_config(config_path)
 
     if not os.path.isdir(index_path):
         print("{} is not a directory. Are you sure you want to save index data there? y/n".format(
@@ -126,9 +116,11 @@ def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
     save_index(filled_index, filled_faiss_index, filled_faiss_meta)
 
 
-def query(index_name, image_dir, index_path, nb_per_split, **kwargs):
+def query(index_name, image_dir, index_path, config_path, nb_per_split, **kwargs):
     faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
     faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
+
+    check_custom_config(config_path)
     index = load_index(faiss_index, faiss_meta)
 
     images = get_index_images(index, image_dir)
@@ -180,6 +172,18 @@ def load_custom_config(config_path):
     else:
         logger.error("The provided config file does not exist.")
         sys.exit(1)
+
+
+def check_custom_config(config_path):
+    if config_path:
+        try:
+            load_custom_config(config_path)
+        except AttributeError as wrong_param:
+            print("pimmi: error: unrecognized argument in custom config file: {}. "
+                  "Use pimmi config-params to display all existing parameters."
+                  .format(wrong_param))
+            parser.print_usage()
+            sys.exit(1)
 
 
 def main():
