@@ -8,4 +8,4 @@ leidenalg
 opencv-python
 twine
 wheel
-yaml
+pyyaml

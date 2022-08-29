@@ -25,7 +25,7 @@ setup(name='pimmi',
         "python-igraph",
         "leidenalg",
         "opencv-python",
-        "yaml"
+        "pyyaml"
       ],
       entry_points={
         'console_scripts': [
