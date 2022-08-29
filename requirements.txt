@@ -4,7 +4,6 @@ pandas
 faiss-cpu
 matplotlib
 python-igraph
-leidenalg
 opencv-python
 twine
 wheel

@@ -23,7 +23,6 @@ setup(name='pimmi',
         "click",
         "matplotlib",
         "python-igraph",
-        "leidenalg",
         "opencv-python",
         "pyyaml"
       ],
