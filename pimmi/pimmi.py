@@ -486,11 +486,14 @@ def query_index_mt(index, images, root_path, pack=-1):
             continue
         all_result.append(result_df)
 
-    logger.info("~ concatenating results")
-    all_result = pd.concat(all_result)
-
-    if all_result is not None:
+    if all_result:
+        logger.info("~ concatenating results")
+        all_result = pd.concat(all_result)
         all_result[dff_internal_pack_id] = pack
+    else:
+        logger.info("No matching result")
+        all_result = pd.DataFrame()
+
     for i in range(prm.nb_threads):
         task_queue.put(constants.cst_stop)
 

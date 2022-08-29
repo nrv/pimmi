@@ -92,7 +92,6 @@ def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
             parser.print_usage()
             sys.exit(1)
 
-
     if not os.path.isdir(index_path):
         print("{} is not a directory. Are you sure you want to save index data there? y/n".format(
             os.path.abspath(index_path)
@@ -152,11 +151,12 @@ def query(index_name, image_dir, index_path, nb_per_split, **kwargs):
             image_dir,
             pack=pack[constants.dff_pack_id]
         )
-        query_result = query_result.sort_values(
-            by=[constants.dff_query_path, constants.dff_nb_match_ransac, constants.dff_ransac_ratio],
-            ascending=False
-        )
-        query_result.to_csv(pack_result_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
+        if not query_result.empty:
+            query_result = query_result.sort_values(
+                by=[constants.dff_query_path, constants.dff_nb_match_ransac, constants.dff_ransac_ratio],
+                ascending=False
+            )
+            query_result.to_csv(pack_result_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
 
 
 def config_params(**kwargs):
