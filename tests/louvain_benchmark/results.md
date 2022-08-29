@@ -1,4 +1,4 @@
-`Python 3.8.0 (default, Mar  3 2022, 13:36:28) 
+Python 3.8.0 (default, Mar  3 2022, 13:36:28) 
 
 Type 'copyright', 'credits' or 'license' for more information
 
@@ -10,6 +10,7 @@ Python 3.8.0 (default, Mar  3 2022, 13:36:28)
 
 [GCC 9.3.0] on linux
 
+```python
 from main import *
 
 %timeit taynaud_community()
@@ -26,4 +27,5 @@ from main import *
 
 %timeit leidenalg_community()
 
-> 383 µs ± 4.36 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)`
+> 383 µs ± 4.36 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+```
