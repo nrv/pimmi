@@ -15,6 +15,7 @@ import argparse
 from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
 import pimmi.toolbox as tbx
 from pimmi.cli.config import parameters as prm
+import pimmi.pimmi_parameters as constants
 
 logger = logging.getLogger(__name__)
 parser = argparse.ArgumentParser(prog="pimmi", description='PIMMI: a command line tool for image mining.')
@@ -47,7 +48,18 @@ def load_cli_parameters():
     parser_fill.set_defaults(func=fill)
 
     # QUERY command
-    parser_query = subparsers.add_parser('query', help="Query some index.")
+    parser_query = subparsers.add_parser('query', help="Query an existing index. Receive IMAGE-DIR, "
+                                                     "a directory containing images, and "
+                                                     "INDEX-NAME, the name given to the index when using `pimmi fill`.")
+    parser_query.add_argument('image_dir', type=str, metavar='image-dir')
+    parser_query.add_argument('index_name', type=str, metavar='index-name')
+    parser_query.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
+                                                            "Defaults to './index'", default="./index")
+    parser_query.add_argument("--nb-img", type=int, required=False, help="Number of images to query the index")
+    parser_query.add_argument("--nb_per_split", default=10000, type=int, help="Number of images to query per pack")
+    parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to "
+                                                             "create a config file template.")
+    parser_query.set_defaults(func=query)
 
     # CONFIG-PARAMS command
     parser_config_params = subparsers.add_parser('config-params', help="List all arguments that can be passed to pimmi to "
@@ -80,6 +92,20 @@ def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
             parser.print_usage()
             sys.exit(1)
 
+
+    if not os.path.isdir(index_path):
+        print("{} is not a directory. Are you sure you want to save index data there? y/n".format(
+            os.path.abspath(index_path)
+        ))
+        if input() == 'y':
+            os.mkdir(index_path)
+        else:
+            print('Please enter a valid directory')
+            index_path = input()
+            if not os.path.isdir(index_path):
+                logger.error("{} does not exist.".format(os.path.abspath(index_path)))
+                sys.exit(1)
+
     if not index_name:
         index_name = os.path.basename(os.path.normpath(image_dir))
 
@@ -96,41 +122,40 @@ def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
         logger.info("using " + str(prm.nb_images_to_train_index) + " images to train and fill index")
         filled_index = create_index_mt(prm.index_type, images, image_dir)
 
-    if not os.path.isdir(index_path):
-        print("Are you sure you want to save index data in {}? y/n".format(os.path.abspath(index_path)))
-        if input() == 'y':
-            os.mkdir(index_path)
-        else:
-            print('Please enter a valid directory')
-            index_path = input()
-            if not os.path.isdir(index_path):
-                logger.error("{} does not exist.".format(os.path.abspath(index_path)))
-                sys.exit(1)
-
     filled_faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
     filled_faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
     save_index(filled_index, filled_faiss_index, filled_faiss_meta)
 
-def query(index_name, image_dir, index_path, index_type, nb_img, nb_per_split, simple, **kwargs):
-    faiss_index = os.path.join(index_path, ".".join([index_name, index_type, "faiss"]))
-    faiss_meta = os.path.join(index_path, ".".join([index_name, index_type, "meta"]))
+
+def query(index_name, image_dir, index_path, nb_per_split, **kwargs):
+    faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
+    faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
     index = load_index(faiss_index, faiss_meta)
 
     images = get_index_images(index, image_dir)
 
+    nb_img = kwargs.get("nb_img")
     if nb_img:
         images = images.head(nb_img)
 
     logger.info("total number of queries " + str(len(images)))
-    images = images.sort_values(by=prm.dff_image_path)
+    images = images.sort_values(by=constants.dff_image_path)
     queries = tbx.split_pack(images, nb_per_split)
     for pack in queries:
-        pack_result_file = faiss_index.replace("faiss", "mining") + "_" + str(pack[prm.dff_pack_id]).zfill(6) + ".csv"
-        logger.info("query " + str(len(pack[prm.dff_pack_files])) + " files from pack " +
-                    str(pack[prm.dff_pack_id]) + " -> " + pack_result_file)
-        query_result = query_index_mt(index, pack[prm.dff_pack_files], image_dir, pack=pack[prm.dff_pack_id])
-        query_result = query_result.sort_values(by=[prm.dff_query_path, prm.dff_nb_match_ransac, prm.dff_ransac_ratio],
-                                                ascending=False)
+        pack_result_file = faiss_index.replace("faiss", "mining") + "_" + str(pack[constants.dff_pack_id])\
+            .zfill(6) + ".csv"
+        logger.info("query " + str(len(pack[constants.dff_pack_files])) + " files from pack " +
+                    str(pack[constants.dff_pack_id]) + " -> " + pack_result_file)
+        query_result = query_index_mt(
+            index,
+            pack[constants.dff_pack_files],
+            image_dir,
+            pack=pack[constants.dff_pack_id]
+        )
+        query_result = query_result.sort_values(
+            by=[constants.dff_query_path, constants.dff_nb_match_ransac, constants.dff_ransac_ratio],
+            ascending=False
+        )
         query_result.to_csv(pack_result_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
 
 
@@ -155,6 +180,7 @@ def load_custom_config(config_path):
     else:
         logger.error("The provided config file does not exist.")
         sys.exit(1)
+
 
 def main():
     cli_params = load_cli_parameters()
