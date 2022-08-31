@@ -163,6 +163,7 @@ def create_config(path, **kwargs):
 
 def load_custom_config(config_path):
     if os.path.isfile(config_path):
+        logger.info("loading configuration from " + config_path)
         custom_config_dict = prm.load_config_file(config_path)
         for param, value in custom_config_dict.items():
             if hasattr(prm, param):
