@@ -143,12 +143,8 @@ def query(index_name, image_dir, index_path, config_path, nb_per_split, **kwargs
             image_dir,
             pack=pack[constants.dff_pack_id]
         )
-        if not query_result.empty:
-            query_result = query_result.sort_values(
-                by=[constants.dff_query_path, constants.dff_nb_match_ransac, constants.dff_ransac_ratio],
-                ascending=False
-            )
-            query_result.to_csv(pack_result_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
+        if query_result:
+            query_result.to_csv(pack_result_file)
 
 
 def config_params(**kwargs):
