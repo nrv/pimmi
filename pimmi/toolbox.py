@@ -1,3 +1,4 @@
+from os.path import join
 import glob
 import json
 import math
@@ -7,12 +8,13 @@ import logging
 
 logger = logging.getLogger("tools")
 
+ALLOWLIST_FORMATS = (".jpeg", ".jpg", ".png")
 
-def get_all_images(image_dirs):
+
+def get_all_images(image_dir):
     files = []
-    for image_dir in image_dirs:
-        files.extend(glob.glob(image_dir + "/**/*.jpg", recursive=True))
-        files.extend(glob.glob(image_dir + "/**/*.png", recursive=True))
+    for extension in ALLOWLIST_FORMATS:
+        files.extend(glob.glob(join(image_dir, "**", "*{}".format(extension)), recursive=True))
     return files
 
 

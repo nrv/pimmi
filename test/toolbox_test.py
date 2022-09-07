@@ -10,4 +10,4 @@ NB_IMAGES = 11
 
 class TestToolbox(object):
     def test_get_all_images(self):
-        assert len(get_all_images([SMALL_DATASET_DIR])) == NB_IMAGES
+        assert len(get_all_images(SMALL_DATASET_DIR)) == NB_IMAGES

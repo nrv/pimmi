@@ -101,7 +101,7 @@ def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
         index_name = os.path.basename(os.path.normpath(image_dir))
 
     logger.info("listing images recursively from : " + image_dir)
-    images = tbx.get_all_images([image_dir])
+    images = tbx.get_all_images(image_dir)
 
     if load_faiss:
         previous_faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))

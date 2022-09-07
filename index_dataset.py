@@ -67,7 +67,7 @@ if __name__ == '__main__':
     images_root = None
     if args.images_dir:
         logger.info("listing images recursively from : " + args.images_dir)
-        images = tbx.get_all_images([args.images_dir])
+        images = tbx.get_all_images(args.images_dir)
         images_root = args.images_dir
     if args.images_meta:
         if not args.images_meta_root:
