@@ -10,6 +10,8 @@ define clean
 endef
 
 # Commands
+test: unit
+
 publish: clean upload
 	$(call clean)
 
@@ -20,3 +22,8 @@ deps:
 upload:
 	python setup.py sdist bdist_wheel
 	twine upload dist/*
+
+unit:
+	@echo Running unit tests...
+	pytest -svvv
+	@echo
