@@ -29,6 +29,7 @@ for param, value in config_dict.items():
         help=argparse.SUPPRESS
     )
 
+
 def load_cli_parameters():
     subparsers = parser.add_subparsers(title="commands")
 
@@ -47,16 +48,17 @@ def load_cli_parameters():
     parser_fill.set_defaults(func=fill)
 
     # QUERY command
-    parser_query = subparsers.add_parser('query', help="Query an existing index. Receive IMAGE-DIR, "
-                                                     "a directory containing images, and "
-                                                     "INDEX-NAME, the name given to the index when using `pimmi fill`.")
+    parser_query = subparsers.add_parser('query', help="Query an existing index. Receive IMAGE-DIR, a directory "
+                                                       "containing images, and INDEX-NAME, the name given to the index "
+                                                       "when using `pimmi fill`.")
     parser_query.add_argument('image_dir', type=str, metavar='image-dir')
     parser_query.add_argument('index_name', type=str, metavar='index-name')
     parser_query.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
-                                                            "Defaults to './index'", default="./index")
-    parser_query.add_argument("--nb-per-split", default=10000, type=int, help="Number of images to query per pack")
-    parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to "
-                                                             "create a config file template.")
+                                                             "Defaults to './index'", default="./index")
+    parser_query.add_argument("--nb-per-split", default=10000, type=int, help="Number of images to query per pack. "
+                                                                              "Defaults to 10000.")
+    parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
+                                                              " create a config file template.")
     parser_query.set_defaults(func=query)
 
     # CONFIG-PARAMS command
