@@ -42,6 +42,10 @@ def load_cli_parameters():
     parser_fill.add_argument('index_name', type=str, metavar='index-name')
     parser_fill.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
                                                             "Defaults to './index'", default="./index")
+    parser_fill.add_argument("--index-type", type=str, help="Faiss index type. "
+                                                            "See https://github.com/facebookresearch/faiss/wiki/"
+                                                            "Lower-memory-footprint#simplifying-index-construction"
+                                                            "Defaults to 'IVF1024,Flat'", default="IVF1024,Flat")
     parser_fill.add_argument("--load-faiss", action="store_true", default=False)
     parser_fill.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to "
                                                              "create a config file template.")
@@ -59,6 +63,7 @@ def load_cli_parameters():
                                                                               "Defaults to 10000.")
     parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
                                                               " create a config file template.")
+    parser_query.add_argument("--simple", action="store_true", default=False)
     parser_query.set_defaults(func=query)
 
     # CONFIG-PARAMS command
@@ -77,7 +82,6 @@ def load_cli_parameters():
 
 
 def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
-
     if not os.path.isdir(image_dir):
         logger.error("The provided image-dir is not a directory.")
         sys.exit(1)
@@ -118,7 +122,7 @@ def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
     save_index(filled_index, filled_faiss_index, filled_faiss_meta)
 
 
-def query(index_name, image_dir, index_path, config_path, nb_per_split, **kwargs):
+def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, **kwargs):
     faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
     faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
 
@@ -130,6 +134,10 @@ def query(index_name, image_dir, index_path, config_path, nb_per_split, **kwargs
     nb_img = kwargs.get("nb_img")
     if nb_img:
         images = images.head(nb_img)
+
+    if simple:
+        prm.do_filter_on_sift_dist = False
+        prm.adaptative_sift_nn = False
 
     logger.info("total number of queries " + str(len(images)))
     images = images.sort_values(by=constants.dff_image_path)
