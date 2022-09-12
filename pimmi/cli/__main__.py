@@ -107,15 +107,18 @@ def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
     logger.info("listing images recursively from : " + image_dir)
     images = tbx.get_all_images(image_dir)
 
+    sift = tbx.Sift(prm.sift_nfeatures, prm.sift_nOctaveLayers, prm.sift_contrastThreshold, prm.sift_edgeThreshold,
+                    prm.sift_sigma, prm.nb_threads)
+
     if load_faiss:
         previous_faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
         previous_faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
         previous_index = load_index(previous_faiss_index, previous_faiss_meta)
         logger.info("using " + str(prm.nb_images_to_train_index) + " images to fill index")
-        filled_index = fill_index_mt(previous_index, images, image_dir)
+        filled_index = fill_index_mt(previous_index, images, image_dir, sift)
     else:
         logger.info("using " + str(prm.nb_images_to_train_index) + " images to train and fill index")
-        filled_index = create_index_mt(prm.index_type, images, image_dir)
+        filled_index = create_index_mt(prm.index_type, images, image_dir, sift)
 
     filled_faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
     filled_faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))

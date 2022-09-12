@@ -9,6 +9,7 @@ import os.path
 from multiprocessing import Queue, Process
 import pimmi.pimmi_parameters as constants
 from pimmi.cli.config import parameters as prm
+from pimmi.toolbox import Sift
 
 grid_bits_per_dim = 10
 grid_d = int(math.pow(2, grid_bits_per_dim))
@@ -27,19 +28,9 @@ dff_internal_faiss_nb_images = "faiss_nb_images"
 dff_internal_faiss_nb_features = "faiss_nb_features"
 dff_internal_meta_df = "meta_df"
 
-sift = None
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(name)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("pimmi")
-
-
-def init_sift():
-    global sift
-    logger.info("Using opencv : " + cv.__version__)
-    cv.setNumThreads(prm.nb_threads)
-    sift = cv.SIFT_create(nfeatures=prm.sift_nfeatures, nOctaveLayers=prm.sift_nOctaveLayers,
-                          contrastThreshold=prm.sift_contrastThreshold, edgeThreshold=prm.sift_edgeThreshold,
-                          sigma=prm.sift_sigma)
 
 
 def resize_if_needed(img):
@@ -53,12 +44,12 @@ def resize_if_needed(img):
     return img, resized
 
 
-def extract_sift_img(img):
+def extract_sift_img(img, sift):
     kp, desc = sift.detectAndCompute(img, None)
     return kp, desc
 
 
-def extract_sift(file, image_id, pack=-1):
+def extract_sift(file, image_id, sift, pack=-1):
     img = cv.imread(file, cv.IMREAD_GRAYSCALE)
     if img is None:
         if pack >= 0:
@@ -68,7 +59,7 @@ def extract_sift(file, image_id, pack=-1):
         logger.error("~ [" + pfx + "] unable to read image file " + file)
         return None, None, None, None, None
     img, resized = resize_if_needed(img)
-    kp, desc = extract_sift_img(img)
+    kp, desc = extract_sift_img(img, sift.config)
     if image_id % 100 == 0:
         h, w = img.shape
         if pack >= 0:
@@ -136,22 +127,21 @@ def as_point_df(query_id=None, image_id=None, point_id=None, knn_ids=None):
             return None
 
 
-def extract_sift_mt_function(task_queue, result_queue):
+def extract_sift_mt_function(task_queue, result_queue, sift):
     for task in iter(task_queue.get, constants.cst_stop):
-        ids, kp, desc, width, height = extract_sift(task[constants.dff_image_path], task[constants.dff_image_id])
+        ids, kp, desc, width, height = extract_sift(task[constants.dff_image_path], task[constants.dff_image_id], sift)
         result_queue.put({constants.dff_image_id: task[constants.dff_image_id], constants.dff_ids: ids,
                           constants.dff_desc: desc, constants.dff_width: width, constants.dff_height: height})
     # logger.info("one thread has stopped")
 
 
-def fill_index_mt(index, images, root_path, only_empty_index=False):
-    init_sift()
+def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
 
     task_queue = Queue()
     result_queue = Queue()
     for i in range(prm.nb_threads):
         # logger.info("launching thread %d", i)
-        Process(target=extract_sift_mt_function, args=(task_queue, result_queue)).start()
+        Process(target=extract_sift_mt_function, args=(task_queue, result_queue, sift)).start()
 
     task_launched = 0
     for image_path in images:
@@ -234,14 +224,14 @@ def fill_index_mt(index, images, root_path, only_empty_index=False):
     return index
 
 
-def create_index_mt(index_type, images, root_path, only_empty_index=False):
+def create_index_mt(index_type, images, root_path, sift, only_empty_index=False):
     new_faiss = faiss.index_factory(128, index_type)
     new_faiss.verbose = True
     index = {dff_internal_faiss: new_faiss, dff_internal_faiss_type: index_type,
              dff_internal_meta: dict(), dff_internal_meta_df: None,
              dff_internal_faiss_nb_features: 0, dff_internal_faiss_nb_images: 0,
              dff_internal_id_generator: 0}
-    return fill_index_mt(index, images, root_path, only_empty_index=only_empty_index)
+    return fill_index_mt(index, images, root_path, sift, only_empty_index=only_empty_index)
 
 
 # TODO check these 2 methods, patched too hardly
@@ -315,8 +305,8 @@ def get_index_images(index, path_prefix):
     return all_images
 
 
-def query_index_extract_single_image(index, image_file, relative_image_path, query_id=0, pack=-1):
-    query_ids, query_kp, query_desc, query_width, query_height = extract_sift(image_file, query_id, pack=pack)
+def query_index_extract_single_image(index, image_file, relative_image_path, sift, query_id=0, pack=-1):
+    query_ids, query_kp, query_desc, query_width, query_height = extract_sift(image_file, query_id, sift, pack=pack)
     return query_index_single_image(index, query_ids, query_desc, query_width, query_height, relative_image_path)
 
 
@@ -446,25 +436,32 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
     return result_df
 
 
-def query_index_mt_function(index, task_queue, result_queue):
+def query_index_mt_function(index, sift, task_queue, result_queue):
+
     for task in iter(task_queue.get, constants.cst_stop):
         result_df = query_index_extract_single_image(
             index,
             task[constants.dff_image_path],
             task[constants.dff_image_relative_path],
-                                                     task[constants.dff_query_id], pack=task[dff_internal_pack_id])
+            sift,
+            query_id=task[constants.dff_query_id],
+            pack=task[dff_internal_pack_id]
+        )
         result_queue.put({constants.dff_query_id: task[constants.dff_query_id], dff_internal_result_df: result_df})
     # logger.info("one thread has stopped")
 
 
 def query_index_mt(index, images, root_path, pack=-1):
-    init_sift()
 
     task_queue = Queue()
     result_queue = Queue()
+
+    sift = Sift(prm.sift_nfeatures, prm.sift_nOctaveLayers, prm.sift_contrastThreshold, prm.sift_edgeThreshold,
+                    prm.sift_sigma, prm.nb_threads)
+
     for i in range(prm.nb_threads):
         # logger.info("launching thread %d", i)
-        Process(target=query_index_mt_function, args=(index, task_queue, result_queue)).start()
+        Process(target=query_index_mt_function, args=(index, sift, task_queue, result_queue)).start()
 
     task_launched = 0
     for row, image in images.iterrows():
