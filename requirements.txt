@@ -5,6 +5,7 @@ faiss-cpu
 matplotlib
 python-igraph
 opencv-python
+pytest
 twine
 wheel
 pyyaml

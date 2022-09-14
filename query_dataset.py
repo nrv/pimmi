@@ -56,7 +56,7 @@ if __name__ == '__main__':
     if args.images_dir:
         logger.info("listing images recursively from : " + args.images_dir)
         # TODO: change to (id, path) df
-        images = tbx.get_all_images([args.images_dir])
+        images = tbx.get_all_images(args.images_dir)
         images_root = args.images_dir
     if args.images_meta:
         logger.info("getting images from : " + args.images_meta)

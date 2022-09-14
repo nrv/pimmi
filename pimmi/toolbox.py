@@ -1,18 +1,21 @@
 import glob
 import json
 import math
+import cv2 as cv
 import pandas as pd
+from os.path import join
 import pimmi.pimmi_parameters as constants
 import logging
 
 logger = logging.getLogger("tools")
 
+ALLOWLIST_FORMATS = (".jpeg", ".jpg", ".png")
 
-def get_all_images(image_dirs):
+
+def get_all_images(image_dir):
     files = []
-    for image_dir in image_dirs:
-        files.extend(glob.glob(image_dir + "/**/*.jpg", recursive=True))
-        files.extend(glob.glob(image_dir + "/**/*.png", recursive=True))
+    for extension in ALLOWLIST_FORMATS:
+        files.extend(glob.glob(join(image_dir, "**", "*{}".format(extension)), recursive=True))
     return files
 
 
@@ -58,3 +61,21 @@ def split_pack(all_files, size=-1):
         splits.append({constants.dff_pack_id: p, constants.dff_pack_files: pack_files})
 
     return splits
+
+
+class Sift(object):
+    def __init__(
+            self,
+            sift_nfeatures,
+            sift_nOctaveLayers,
+            sift_contrastThreshold,
+            sift_edgeThreshold,
+            sift_sigma,
+            nb_threads
+    ):
+
+        self.config = cv.SIFT_create(nfeatures=sift_nfeatures, nOctaveLayers=sift_nOctaveLayers,
+                              contrastThreshold=sift_contrastThreshold, edgeThreshold=sift_edgeThreshold,
+                              sigma=sift_sigma)
+        logger.info("Using opencv : " + cv.__version__)
+        cv.setNumThreads(nb_threads)

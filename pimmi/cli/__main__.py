@@ -29,6 +29,7 @@ for param, value in config_dict.items():
         help=argparse.SUPPRESS
     )
 
+
 def load_cli_parameters():
     subparsers = parser.add_subparsers(title="commands")
 
@@ -41,22 +42,28 @@ def load_cli_parameters():
     parser_fill.add_argument('index_name', type=str, metavar='index-name')
     parser_fill.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
                                                             "Defaults to './index'", default="./index")
+    parser_fill.add_argument("--index-type", type=str, help="Faiss index type. "
+                                                            "See https://github.com/facebookresearch/faiss/wiki/"
+                                                            "Lower-memory-footprint#simplifying-index-construction"
+                                                            "Defaults to 'IVF1024,Flat'", default="IVF1024,Flat")
     parser_fill.add_argument("--load-faiss", action="store_true", default=False)
     parser_fill.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to "
                                                              "create a config file template.")
     parser_fill.set_defaults(func=fill)
 
     # QUERY command
-    parser_query = subparsers.add_parser('query', help="Query an existing index. Receive IMAGE-DIR, "
-                                                     "a directory containing images, and "
-                                                     "INDEX-NAME, the name given to the index when using `pimmi fill`.")
+    parser_query = subparsers.add_parser('query', help="Query an existing index. Receive IMAGE-DIR, a directory "
+                                                       "containing images, and INDEX-NAME, the name given to the index "
+                                                       "when using `pimmi fill`.")
     parser_query.add_argument('image_dir', type=str, metavar='image-dir')
     parser_query.add_argument('index_name', type=str, metavar='index-name')
     parser_query.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
-                                                            "Defaults to './index'", default="./index")
-    parser_query.add_argument("--nb-per-split", default=10000, type=int, help="Number of images to query per pack")
-    parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to "
-                                                             "create a config file template.")
+                                                             "Defaults to './index'", default="./index")
+    parser_query.add_argument("--nb-per-split", default=10000, type=int, help="Number of images to query per pack. "
+                                                                              "Defaults to 10000.")
+    parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
+                                                              " create a config file template.")
+    parser_query.add_argument("--simple", action="store_true", default=False)
     parser_query.set_defaults(func=query)
 
     # CONFIG-PARAMS command
@@ -75,7 +82,6 @@ def load_cli_parameters():
 
 
 def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
-
     if not os.path.isdir(image_dir):
         logger.error("The provided image-dir is not a directory.")
         sys.exit(1)
@@ -99,24 +105,27 @@ def fill(image_dir, index_name, index_path, load_faiss, config_path, **kwargs):
         index_name = os.path.basename(os.path.normpath(image_dir))
 
     logger.info("listing images recursively from : " + image_dir)
-    images = tbx.get_all_images([image_dir])
+    images = tbx.get_all_images(image_dir)
+
+    sift = tbx.Sift(prm.sift_nfeatures, prm.sift_nOctaveLayers, prm.sift_contrastThreshold, prm.sift_edgeThreshold,
+                    prm.sift_sigma, prm.nb_threads)
 
     if load_faiss:
         previous_faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
         previous_faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
         previous_index = load_index(previous_faiss_index, previous_faiss_meta)
         logger.info("using " + str(prm.nb_images_to_train_index) + " images to fill index")
-        filled_index = fill_index_mt(previous_index, images, image_dir)
+        filled_index = fill_index_mt(previous_index, images, image_dir, sift)
     else:
         logger.info("using " + str(prm.nb_images_to_train_index) + " images to train and fill index")
-        filled_index = create_index_mt(prm.index_type, images, image_dir)
+        filled_index = create_index_mt(prm.index_type, images, image_dir, sift)
 
     filled_faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
     filled_faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
     save_index(filled_index, filled_faiss_index, filled_faiss_meta)
 
 
-def query(index_name, image_dir, index_path, config_path, nb_per_split, **kwargs):
+def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, **kwargs):
     faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
     faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
 
@@ -128,6 +137,10 @@ def query(index_name, image_dir, index_path, config_path, nb_per_split, **kwargs
     nb_img = kwargs.get("nb_img")
     if nb_img:
         images = images.head(nb_img)
+
+    if simple:
+        prm.do_filter_on_sift_dist = False
+        prm.adaptative_sift_nn = False
 
     logger.info("total number of queries " + str(len(images)))
     images = images.sort_values(by=constants.dff_image_path)

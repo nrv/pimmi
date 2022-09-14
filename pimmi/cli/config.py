@@ -9,5 +9,9 @@ class ConfigParser:
 
         return config_dict
 
+    def set_config_as_attributes(self, config_dict):
+        for key, value in config_dict.items():
+            self.__setattr__(key, value)
+
 
 parameters = ConfigParser()
