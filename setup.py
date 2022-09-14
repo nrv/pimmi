@@ -4,7 +4,7 @@ with open('./README.md', 'r') as f:
     long_description = f.read()
 
 setup(name='pimmi',
-      version='0.0.5',
+      version='0.0.6',
       description='Python IMage MIning',
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -14,8 +14,9 @@ setup(name='pimmi',
       author_email='',
       keywords='image mining',
       python_requires='>=3.5,<3.8',
-      package_data={'pimmi': ['pimmi/cli/config.yml']},
-      packages=find_packages(exclude=["collect*", "dist", "build"]),
+      package_data={'pimmi': ['cli/config.yml']},
+      package_dir={'pimmi': 'pimmi'},
+      packages=['pimmi'],
       include_package_data=True,
       install_requires=[
         "numpy",
