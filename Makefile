@@ -15,6 +15,9 @@ test: unit
 publish: clean upload
 	$(call clean)
 
+clean:
+	$(call clean)
+
 deps:
 	pip3 install -U pip
 	pip3 install -r requirements.txt
