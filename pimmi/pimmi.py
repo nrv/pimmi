@@ -45,7 +45,7 @@ def resize_if_needed(img):
 
 
 def extract_sift_img(img, sift):
-    kp, desc = sift.detectAndCompute(img, None)
+    kp, desc = sift.config.detectAndCompute(img, None)
     return kp, desc
 
 
@@ -59,7 +59,7 @@ def extract_sift(file, image_id, sift, pack=-1):
         logger.error("~ [" + pfx + "] unable to read image file " + file)
         return None, None, None, None, None
     img, resized = resize_if_needed(img)
-    kp, desc = extract_sift_img(img, sift.config)
+    kp, desc = extract_sift_img(img, sift)
     if image_id % 100 == 0:
         h, w = img.shape
         if pack >= 0:
