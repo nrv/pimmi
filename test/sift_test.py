@@ -7,9 +7,8 @@ from os.path import join, dirname
 from pimmi.pimmi import extract_sift
 from pimmi.cli.config import parameters as prm
 from pimmi.toolbox import Sift
-from test.write_sift_example import load_sifts, EXAMPLE_FILE, kp_fieldnames
+from test.utils import load_sifts_from_file, EXAMPLE_IMAGE_FILE, SMALL_DATASET_DIR, kp_fieldnames
 
-SMALL_DATASET_DIR = join(dirname(dirname(__file__)), 'demo_dataset', 'small_dataset')
 IMAGE_PATH = join(SMALL_DATASET_DIR, "000010.jpg")
 
 IMAGE_WIDTH = 512
@@ -23,11 +22,11 @@ prm.set_config_as_attributes(config_dict)
 class TestSift(object):
     def test_extract_sift(self):
         sift = Sift(prm.sift_nfeatures, prm.sift_nOctaveLayers, prm.sift_contrastThreshold, prm.sift_edgeThreshold,
-                        prm.sift_sigma, prm.nb_threads)
+                    prm.sift_sigma, prm.nb_threads)
 
         assert extract_sift("wrong_path.jpg", 0, sift) == (None, None, None, None, None)
 
-        ids, desc, kp = load_sifts(EXAMPLE_FILE)
+        ids, desc, kp = load_sifts_from_file(EXAMPLE_IMAGE_FILE)
 
         tested_ids, tested_kp, tested_desc, tested_width, tested_height = extract_sift(IMAGE_PATH, 0, sift)
 

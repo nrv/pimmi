@@ -9,14 +9,22 @@ define clean
 	rm -f *.spec
 endef
 
-# Commands
-test: unit
+define functional
+    pimmi fill demo_dataset/small_dataset/ small --index-path test/ressources/tmp/ --erase --force
+    pimmi query --simple demo_dataset/small_dataset/ small --index-path test/ressources/tmp/
+endef
 
+# Commands
 publish: clean upload
 	$(call clean)
 
 clean:
 	$(call clean)
+
+test: functional unit
+
+functional:
+	$(call functional)
 
 deps:
 	pip3 install -U pip
