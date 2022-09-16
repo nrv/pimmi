@@ -5,6 +5,13 @@ SIFT interest points, clustering, based on OpenCV and Faiss, multithreaded.
 
 Very preliminary stuff for now.
 
+## Install with pyenv and pip
+```bash
+pyenv virtualenv 3.7.0 pimmi-env
+pyenv activate pimmi-env
+pip install -U pip
+pip install pimmi
+```
 
 ## Demo
 ```bash

@@ -9,7 +9,7 @@ from pimmi.cli.config import parameters as prm
 
 SMALL_DATASET_DIR = join(dirname(dirname(__file__)), 'demo_dataset', 'small_dataset')
 IMAGE_PATH = join(SMALL_DATASET_DIR, "000010.jpg")
-EXAMPLE_FILE = join(dirname(__file__), "ressources", "image_000010_sifts.csv")
+EXAMPLE_IMAGE_FILE = join(dirname(__file__), "ressources", "image_000010_sifts.csv")
 IMAGE_ID = 0
 
 config_path = join(dirname(dirname(__file__)), "pimmi", "cli", "config.yml")
@@ -38,7 +38,7 @@ def write_sifts(desc, ids, kp):
     desc_ids = list(range(desc.shape[1]))
     fieldnames = ["id"] + kp_fieldnames + desc_ids
 
-    with open(EXAMPLE_FILE, "w") as f:
+    with open(EXAMPLE_IMAGE_FILE, "w") as f:
         writer = csv.writer(f)
         writer.writerow(fieldnames)
         for id, kp_item, desc_item in zip(ids, kp, desc):
@@ -50,7 +50,7 @@ def write_sifts(desc, ids, kp):
             )
 
 
-def load_sifts(file):
+def load_sifts_from_file(file):
     lines = -1
 
     with open(file, "r") as f:
