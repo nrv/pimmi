@@ -59,6 +59,6 @@ class TestPipeline(object):
                                                                                                     ' pair (%s, %s)'\
                                                                                                     % (column, query,
                                                                                                        result)
-        # for file in glob(join(tmp_folder_path, "*")):
-        #     remove(file)
+        for file in glob(join(tmp_folder_path, "*")):
+            remove(file)
 
