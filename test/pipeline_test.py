@@ -17,13 +17,14 @@ prm.set_config_as_attributes(config_dict)
 
 
 def load_query_results_from_file(file):
-    fieldnames = ["keep","query_nb_points","result_image_id","nb_match_total","keep_smn","nb_match_ransac","keep_rns",
-                  "ransac_ratio","result_path","result_width","result_height","result_nb_points","query_path",
-                  "query_width","query_height","query_image_id","pack_id"]
-    selected_names = ["keep","query_nb_points","result_image_id", "nb_match_total", "keep_smn",
+    fieldnames = ["keep","query_nb_points", "result_image_id", "nb_match_total", "keep_smn", "nb_match_ransac",
+                  "keep_rns", "ransac_ratio", "result_path", "result_width", "result_height", "result_nb_points",
+                  "query_path", "query_width", "query_height", "query_image_id", "pack_id"]
+    selected_names = ["keep", "query_nb_points", "nb_match_total", "keep_smn",
                       # ransac stuff has a random part - "nb_match_ransac", "ransac_ratio", "keep_rns",
-                      "result_path","result_width","result_height","result_nb_points",
-                      "query_path", "query_width","query_height","query_image_id","pack_id"]
+                      # image_id may change - "result_image_id", "query_image_id"
+                      "result_path", "result_width", "result_height", "result_nb_points",
+                      "query_path", "query_width", "query_height", "pack_id"]
 
     query_results = defaultdict(lambda: defaultdict(dict))
 
