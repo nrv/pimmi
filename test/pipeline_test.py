@@ -20,7 +20,8 @@ def load_query_results_from_file(file):
     fieldnames = ["keep","query_nb_points", "result_image_id", "nb_match_total", "keep_smn", "nb_match_ransac",
                   "keep_rns", "ransac_ratio", "result_path", "result_width", "result_height", "result_nb_points",
                   "query_path", "query_width", "query_height", "query_image_id", "pack_id"]
-    selected_names = ["keep", "query_nb_points", "nb_match_total", "keep_smn",
+    selected_names = ["query_nb_points", "nb_match_total",
+                      # new file version - "keep", "keep_smn"
                       # ransac stuff has a random part - "nb_match_ransac", "ransac_ratio", "keep_rns",
                       # image_id may change - "result_image_id", "query_image_id"
                       "result_path", "result_width", "result_height", "result_nb_points",
