@@ -45,7 +45,7 @@ def load_cli_parameters():
     parser_fill.add_argument("--index-type", type=str, help="Faiss index type. "
                                                             "See https://github.com/facebookresearch/faiss/wiki/"
                                                             "Lower-memory-footprint#simplifying-index-construction"
-                                                            "Defaults to 'IVF1024,Flat'", default="IVF1024,Flat")
+                                                            "Defaults to 'IDMap,Flat'", default="IDMap,Flat")
     parser_fill.add_argument("-e", "--erase", action="store_true", help="Erase previously existing index "
                                                                         "if there is one. By default, do not erase and"
                                                                         "fill the existing index with new "
@@ -87,7 +87,7 @@ def load_cli_parameters():
     return cli_parameters
 
 
-def fill(image_dir, index_name, index_path, config_path, index_type="IVF1024,Flat", erase=False, force=False, **kwargs):
+def fill(image_dir, index_name, index_path, config_path, index_type="IDMap,Flat", erase=False, force=False, **kwargs):
     if not os.path.isdir(image_dir):
         logger.error("The provided image-dir is not a directory.")
         sys.exit(1)

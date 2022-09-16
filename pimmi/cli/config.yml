@@ -1,4 +1,5 @@
-index_type: "IVF1024,Flat"
+# index_type: "IVF1024,Flat"
+index_type: "IDMap,Flat"
 
 nb_threads: 8
 do_resize_image: True

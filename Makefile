@@ -11,7 +11,7 @@ endef
 
 define functional
     pimmi fill demo_dataset/small_dataset/ small --index-path test/ressources/tmp/ --erase --force
-    pimmi query --simple demo_dataset/small_dataset/ small --index-path test/ressources/tmp/
+    pimmi query demo_dataset/small_dataset/ small --index-path test/ressources/tmp/
 endef
 
 # Commands
