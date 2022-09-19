@@ -149,10 +149,11 @@ def fill(image_dir, index_name, index_path, config_path, index_type="IDMap,Flat"
 
 
 def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, **kwargs):
+    check_custom_config(config_path)
+
     faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
     faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
 
-    check_custom_config(config_path)
     index = load_index(faiss_index, faiss_meta)
 
     images = get_index_images(index, image_dir)
