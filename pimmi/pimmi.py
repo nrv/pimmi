@@ -1,6 +1,5 @@
 import math
 import numpy as np
-import pandas as pd
 import cv2 as cv
 import faiss
 import pickle
@@ -26,7 +25,6 @@ grid_shift = grid_bits_per_dim * 2
 grid_x_mask = grid_d - 1
 
 dff_internal_meta = "meta"
-# dff_internal_meta_df = "meta_df"
 dff_internal_id_generator = "id_generator"
 dff_internal_pack_id = "pack_id"
 dff_internal_result_df = "result_df"
@@ -116,25 +114,6 @@ def grid_id_to_coord(grid_id):
 
 def full_id_to_coord(full_id):
     return grid_id_to_coord(full_id_to_grid_id(full_id))
-
-
-def as_point_df(query_id=None, image_id=None, point_id=None, knn_ids=None):
-    if query_id is None:
-        return pd.DataFrame(columns=[constants.dff_query_id, constants.dff_image_id, constants.dff_point_id])
-    else:
-        if image_id is not None and point_id is not None:
-            return pd.DataFrame([[query_id, image_id, point_id]],
-                                columns=[constants.dff_query_id, constants.dff_image_id, constants.dff_point_id])
-        elif knn_ids is not None:
-            images = full_id_to_image_id(knn_ids)
-            points = full_id_to_grid_id(knn_ids)
-            return pd.DataFrame({
-                constants.dff_query_id: query_id,
-                constants.dff_image_id: images,
-                constants.dff_point_id: points
-            })
-        else:
-            return None
 
 
 def extract_sift_mt_function(task_queue, result_queue, sift):
@@ -245,18 +224,6 @@ def create_index_mt(index_type, images, root_path, sift, only_empty_index=False)
     return fill_index_mt(index, images, root_path, sift, only_empty_index=only_empty_index)
 
 
-# TODO check these 2 methods, patched too hardly
-# def meta_as_df(meta_json):
-#     index_meta_df = pd.DataFrame(meta_json.items(), columns=["tmp_id", "tmp_stuff"])
-#     unnested = pd.json_normalize(index_meta_df["tmp_stuff"])
-#     return index_meta_df.join(unnested).drop(columns=["tmp_id", "tmp_stuff"])
-#
-#
-# def transform_meta_to_df(index):
-#     index[dff_internal_meta_df] = meta_as_df(index[dff_internal_meta])
-#     # index[dff_internal_meta_df][constants.dff_image_path] = "/" + index[dff_internal_meta_df][constants.dff_image_path]
-
-
 def save_index(index, faiss_file, meta_file):
     faiss.write_index(index[dff_internal_faiss], faiss_file)
     if meta_file is not None:
@@ -307,16 +274,11 @@ def load_index(faiss_file, meta_file, correct=None, only_meta=False):
 
 
 def get_index_images(index, path_prefix):
-    # all_path = path_prefix + "/" + index[dff_internal_meta_df][constants.dff_image_path]
-    # all_image_ids = index[dff_internal_meta_df][constants.dff_image_id]
-
+    # TODO simplify these 3 lines !
     all_path = [path_prefix + "/" + image[constants.dff_image_path] for image in index[dff_internal_meta].values()]
     all_image_ids = [image[constants.dff_image_id] for image in index[dff_internal_meta].values()]
+    all_images = [{constants.dff_image_path: p, constants.dff_image_id: i} for p, i in zip(all_path, all_image_ids)]
 
-    all_images = pd.DataFrame({
-        constants.dff_image_path: all_path,
-        constants.dff_image_id: all_image_ids
-    })
     logger.info("found " + str(len(all_images)) + " images in index")
     return all_images
 
@@ -564,19 +526,10 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                     ir.keep = False
 
             result_df.filter_on_ransac_sift_match_nb(prm.sift_match_nb_after_ransac_threshold)
-
-        # result_df = pd.merge(result_df, index[dff_internal_meta_df][[constants.dff_image_path, constants.dff_image_id]], how="left",
-        #                      left_on=constants.dff_query_path, right_on=constants.dff_image_path)
-        # result_df = result_df.drop(columns=constants.dff_image_path).rename(columns={
-        #     constants.dff_image_id: constants.dff_query_image
-        # })
-        #
-
     return result_df
 
 
 def query_index_mt_function(index, sift, task_queue, result_queue):
-
     for task in iter(task_queue.get, constants.cst_stop):
         result_df = query_index_extract_single_image(
             index,
@@ -591,7 +544,6 @@ def query_index_mt_function(index, sift, task_queue, result_queue):
 
 
 def query_index_mt(index, images, root_path, pack=-1):
-
     task_queue = Queue()
     result_queue = Queue()
 
@@ -603,7 +555,7 @@ def query_index_mt(index, images, root_path, pack=-1):
         Process(target=query_index_mt_function, args=(index, sift, task_queue, result_queue)).start()
 
     task_launched = 0
-    for row, image in images.iterrows():
+    for image in images:
         image_path = image[constants.dff_image_path]
         rel_image_path = os.path.relpath(image_path, root_path)
         task_queue.put({constants.dff_image_path: image_path, constants.dff_image_relative_path: rel_image_path,

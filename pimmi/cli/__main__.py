@@ -167,7 +167,8 @@ def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, 
         prm.adaptative_sift_nn = False
 
     logger.info("total number of queries " + str(len(images)))
-    images = images.sort_values(by=constants.dff_image_path)
+    # images = images.sort_values(by=constants.dff_image_path)
+    images.sort(key=lambda x: x[constants.dff_image_path])
     queries = tbx.split_pack(images, nb_per_split)
     for pack in queries:
         pack_result_file = faiss_index.replace("faiss", "mining") + "_" + str(pack[constants.dff_pack_id])\
