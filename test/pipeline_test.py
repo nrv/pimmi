@@ -41,10 +41,10 @@ class TestPipeline(object):
     def test_fill_query(self):
         tmp_folder_path = join(dirname(__file__), "ressources", "tmp")
         results = load_query_results_from_file(SMALL_DATASET_QUERY_RESULTS)
-        # fill(SMALL_DATASET_DIR, "small", tmp_folder_path, config_path=None, index_type = 'IVF1024,Flat',
+        # fill(SMALL_DATASET_DIR, "small", tmp_folder_path, config_path=None, index_type="IDMap,Flat",
         #      erase=False, force=False, nb_threads=1)
-        # query("small", SMALL_DATASET_DIR, tmp_folder_path, config_path=None, nb_per_split=10000, simple=True, nb_threads=1)
-        # tested_results = load_query_results_from_file(join(tmp_folder_path, "small.IVF1024,Flat.mining_000000.csv"))
+        # query("small", SMALL_DATASET_DIR, tmp_folder_path, config_path=None, nb_per_split=10000, simple=True,
+        # nb_threads=1, index_type="IDMap,Flat")
         tested_results = load_query_results_from_file(join(tmp_folder_path, "small.IDMap,Flat.mining_000000.csv"))
 
         for query in results:

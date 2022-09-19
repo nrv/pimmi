@@ -22,11 +22,20 @@ parser = argparse.ArgumentParser(prog="pimmi", description='PIMMI: a command lin
 config_path = os.path.join(os.path.dirname(__file__), "config.yml")
 config_dict = prm.load_config_file(config_path)
 for param, value in config_dict.items():
+    if type(value) == dict and "help" in value:
+        help_message = value["help"]
+        default = value["value"]
+        argument_type = type(value["value"])
+    else:
+        help_message = argparse.SUPPRESS
+        argument_type = type(value)
+        default = value
+
     parser.add_argument(
         "--{}".format(param.replace("_", "-")),
-        type=type(value),
-        default=value,
-        help=argparse.SUPPRESS
+        type=argument_type,
+        default=default,
+        help=help_message
     )
 
 
@@ -42,10 +51,6 @@ def load_cli_parameters():
     parser_fill.add_argument('index_name', type=str, metavar='index-name')
     parser_fill.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
                                                             "Defaults to './index'", default="./index")
-    parser_fill.add_argument("--index-type", type=str, help="Faiss index type. "
-                                                            "See https://github.com/facebookresearch/faiss/wiki/"
-                                                            "Lower-memory-footprint#simplifying-index-construction"
-                                                            "Defaults to 'IDMap,Flat'", default="IDMap,Flat")
     parser_fill.add_argument("-e", "--erase", action="store_true", help="Erase previously existing index "
                                                                         "if there is one. By default, do not erase and"
                                                                         "fill the existing index with new "

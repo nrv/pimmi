@@ -11,6 +11,8 @@ class ConfigParser:
 
     def set_config_as_attributes(self, config_dict):
         for key, value in config_dict.items():
+            if type(value) == dict and "help" in value:
+                value = value["value"]
             self.__setattr__(key, value)
 
 

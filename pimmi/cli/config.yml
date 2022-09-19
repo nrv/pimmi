@@ -1,5 +1,9 @@
-# index_type: "IVF1024,Flat"
-index_type: "IDMap,Flat"
+#index_type: "IVF1024,Flat"
+index_type:
+  value: "IDMap,Flat"
+  help: "Faiss index type. See
+  https://github.com/facebookresearch/faiss/wiki/Lower-memory-footprint#simplifying-index-construction.
+  Defaults to 'IDMap,Flat'"
 
 nb_threads: 8
 do_resize_image: True
