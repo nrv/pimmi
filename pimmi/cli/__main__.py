@@ -94,22 +94,23 @@ def fill(image_dir, index_name, index_path, config_path, index_type="IDMap,Flat"
 
     check_custom_config(config_path)
 
-    faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
-    faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
-
     if not os.path.isdir(index_path):
         index_exists = False
         if confirm("{} is not a directory. Do you want to create one? y/n".format(
             os.path.abspath(index_path)
         )):
             os.mkdir(index_path)
+            faiss_index, faiss_meta = make_index_path(index_path, index_name, index_type)
         else:
             print('Please enter a valid directory')
             index_path = input()
             if not os.path.isdir(index_path):
                 logger.error("{} does not exist.".format(os.path.abspath(index_path)))
                 sys.exit(1)
+            else:
+                faiss_index, faiss_meta = make_index_path(index_path, index_name, index_type)
     else:
+        faiss_index, faiss_meta = make_index_path(index_path, index_name, index_type)
         if os.path.isfile(faiss_index) and os.path.isfile(faiss_meta):
             index_exists = True
             if not force:
@@ -148,11 +149,10 @@ def fill(image_dir, index_name, index_path, config_path, index_type="IDMap,Flat"
     save_index(filled_index, faiss_index, faiss_meta)
 
 
-def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, **kwargs):
+def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, index_type="IDMap,Flat", **kwargs):
     check_custom_config(config_path)
 
-    faiss_index = os.path.join(index_path, ".".join([index_name, prm.index_type, "faiss"]))
-    faiss_meta = os.path.join(index_path, ".".join([index_name, prm.index_type, "meta"]))
+    faiss_index, faiss_meta = make_index_path(index_path, index_name, index_type)
 
     index = load_index(faiss_index, faiss_meta)
 
@@ -183,6 +183,11 @@ def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, 
         )
         if query_result:
             query_result.to_csv(pack_result_file)
+
+
+def make_index_path(index_path, index_name, index_type):
+    path = os.path.join(index_path, ".".join([index_name, index_type]))
+    return ".".join([path, "faiss"]), ".".join([path, "meta"])
 
 
 def config_params(**kwargs):
