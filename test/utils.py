@@ -12,7 +12,7 @@ IMAGE_PATH = join(SMALL_DATASET_DIR, "000010.jpg")
 EXAMPLE_IMAGE_FILE = join(dirname(__file__), "ressources", "image_000010_sifts.csv")
 IMAGE_ID = 0
 
-config_path = join(dirname(dirname(__file__)), "pimmi", "cli", "config.yml")
+config_path = join(dirname(__file__), "ressources", "config.yml")
 config_dict = prm.load_config_file(config_path)
 prm.set_config_as_attributes(config_dict)
 

@@ -5,18 +5,13 @@ import numpy as np
 from os.path import join, dirname
 
 from pimmi.pimmi import extract_sift
-from pimmi.cli.config import parameters as prm
 from pimmi.toolbox import Sift
-from test.utils import load_sifts_from_file, EXAMPLE_IMAGE_FILE, SMALL_DATASET_DIR, kp_fieldnames
+from test.utils import load_sifts_from_file, EXAMPLE_IMAGE_FILE, SMALL_DATASET_DIR, kp_fieldnames, prm
 
 IMAGE_PATH = join(SMALL_DATASET_DIR, "000010.jpg")
 
 IMAGE_WIDTH = 512
 IMAGE_HEIGHT = 341
-
-config_path = join(dirname(dirname(__file__)), "pimmi", "cli", "config.yml")
-config_dict = prm.load_config_file(config_path)
-prm.set_config_as_attributes(config_dict)
 
 
 class TestSift(object):

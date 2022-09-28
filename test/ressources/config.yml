@@ -1,5 +1,5 @@
 index_type:
-  value: "IVF1024,Flat"
+  value: "IDMap,Flat"
   help: "Faiss index type. See
   https://github.com/facebookresearch/faiss/wiki/Lower-memory-footprint#simplifying-index-construction.
   Defaults to 'IVF1024,Flat'"

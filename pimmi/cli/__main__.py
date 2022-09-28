@@ -92,7 +92,7 @@ def load_cli_parameters():
     return cli_parameters
 
 
-def fill(image_dir, index_name, index_path, config_path, index_type="IDMap,Flat", erase=False, force=False, **kwargs):
+def fill(image_dir, index_name, index_path, config_path, erase=False, force=False, **kwargs):
     if not os.path.isdir(image_dir):
         logger.error("The provided image-dir is not a directory.")
         sys.exit(1)
@@ -105,7 +105,7 @@ def fill(image_dir, index_name, index_path, config_path, index_type="IDMap,Flat"
             os.path.abspath(index_path)
         )):
             os.mkdir(index_path)
-            faiss_index, faiss_meta = make_index_path(index_path, index_name, index_type)
+            faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
         else:
             print('Please enter a valid directory')
             index_path = input()
@@ -113,9 +113,9 @@ def fill(image_dir, index_name, index_path, config_path, index_type="IDMap,Flat"
                 logger.error("{} does not exist.".format(os.path.abspath(index_path)))
                 sys.exit(1)
             else:
-                faiss_index, faiss_meta = make_index_path(index_path, index_name, index_type)
+                faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
     else:
-        faiss_index, faiss_meta = make_index_path(index_path, index_name, index_type)
+        faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
         if os.path.isfile(faiss_index) and os.path.isfile(faiss_meta):
             index_exists = True
             if not force:
@@ -154,10 +154,10 @@ def fill(image_dir, index_name, index_path, config_path, index_type="IDMap,Flat"
     save_index(filled_index, faiss_index, faiss_meta)
 
 
-def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, index_type="IDMap,Flat", **kwargs):
+def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, **kwargs):
     check_custom_config(config_path)
 
-    faiss_index, faiss_meta = make_index_path(index_path, index_name, index_type)
+    faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
 
     index = load_index(faiss_index, faiss_meta)
 
@@ -210,7 +210,10 @@ def load_custom_config(config_path):
         logger.info("loading configuration from " + config_path)
         custom_config_dict = prm.load_config_file(config_path)
         for param, value in custom_config_dict.items():
+            if type(value) == dict and "help" in value:
+                value = value["value"]
             if hasattr(prm, param):
+                #todo: use the parser to do this
                 setattr(prm, param, value)
             else:
                 raise AttributeError(param)

@@ -10,8 +10,8 @@ define clean
 endef
 
 define functional
-    pimmi fill demo_dataset/small_dataset/ small --index-path test/ressources/tmp/ --erase --force
-    pimmi query demo_dataset/small_dataset/ small --index-path test/ressources/tmp/
+    pimmi fill demo_dataset/small_dataset/ small --index-path test/ressources/tmp/ -e -f --config-path test/ressources/config.yml
+    pimmi query demo_dataset/small_dataset/ small --index-path test/ressources/tmp/ --config-path test/ressources/config.yml
 endef
 
 # Commands
