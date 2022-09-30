@@ -28,12 +28,11 @@ grid_aspect_ratio = True
 dff_internal_meta = "meta"
 dff_internal_id_generator = "id_generator"
 dff_internal_pack_id = "pack_id"
-dff_internal_result_df = "result_df"
+dff_internal_query_result = "query_result"
 dff_internal_faiss = "faiss"
 dff_internal_faiss_type = "faiss_type"
 dff_internal_faiss_nb_images = "faiss_nb_images"
 dff_internal_faiss_nb_features = "faiss_nb_features"
-
 
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(name)s - %(message)s', level=logging.INFO)
@@ -126,7 +125,6 @@ def extract_sift_mt_function(task_queue, result_queue, sift):
 
 
 def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
-
     task_queue = Queue()
     result_queue = Queue()
     for i in range(prm.nb_threads):
@@ -431,7 +429,7 @@ class MatchedPointList:
 
 
 def query_index_single_image(index, query_ids, query_desc, query_width, query_height, query_path):
-    result_df: ImageResultList = ImageResultList()
+    query_result: ImageResultList = ImageResultList()
     kept_matches: MatchedPointList = MatchedPointList()
     if len(query_ids) > 0:
         result_images = dict()
@@ -479,19 +477,19 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                 current_nn = current_nn * prm.query_adaptative_knn_mult
                 max_hop -= 1
 
-        result_df.add_new_image_results(len(query_ids), result_images)
+        query_result.add_new_image_results(len(query_ids), result_images)
 
         if prm.query_match_ratio_filter:
-            result_df.filter_on_sift_match_ratio(int(math.floor(len(query_ids) * prm.sift_match_ratio_threshold)))
+            query_result.filter_on_sift_match_ratio(int(math.floor(len(query_ids) * prm.sift_match_ratio_threshold)))
 
         if prm.query_match_nb_filter:
-            result_df.filter_on_sift_match_nb(prm.query_match_nb_threshold)
+            query_result.filter_on_sift_match_nb(prm.query_match_nb_threshold)
 
         if prm.query_ransac:
             if prm.query_match_ratio_filter or prm.query_match_nb_filter:
-                kept_matches.keep_only_images(result_df.get_kept_image_ids())
+                kept_matches.keep_only_images(query_result.get_kept_image_ids())
 
-            ransac_df = {}
+            ransac_result = {}
 
             for image_id, matched_pairs in kept_matches.group_by_image_id():
                 query_points = grid_id_to_coord([mp.query_id for mp in matched_pairs]).reshape(-1, 1, 2)
@@ -505,10 +503,10 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                     nb_match_after_ransac = 0
                 else:
                     nb_match_after_ransac = sum(mask.ravel().tolist())
-                ransac_df[image_id] = nb_match_after_ransac
+                ransac_result[image_id] = nb_match_after_ransac
 
-            for ir in result_df:
-                ransac_ir = ransac_df.get(ir.result_image_id)
+            for ir in query_result:
+                ransac_ir = ransac_result.get(ir.result_image_id)
                 if ransac_ir is not None:
                     ir.nb_match_ransac = ransac_ir
                 else:
@@ -527,13 +525,13 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                     ir.keep = False
 
             if prm.query_match_nb_ransac_threshold:
-                result_df.filter_on_ransac_sift_match_nb(prm.query_match_nb_ransac_threshold)
-    return result_df
+                query_result.filter_on_ransac_sift_match_nb(prm.query_match_nb_ransac_threshold)
+    return query_result
 
 
 def query_index_mt_function(index, sift, task_queue, result_queue):
     for task in iter(task_queue.get, constants.cst_stop):
-        result_df = query_index_extract_single_image(
+        query_result = query_index_extract_single_image(
             index,
             task[constants.dff_image_path],
             task[constants.dff_image_relative_path],
@@ -541,7 +539,7 @@ def query_index_mt_function(index, sift, task_queue, result_queue):
             query_id=task[constants.dff_query_id],
             pack=task[dff_internal_pack_id]
         )
-        result_queue.put({constants.dff_query_id: task[constants.dff_query_id], dff_internal_result_df: result_df})
+        result_queue.put({constants.dff_query_id: task[constants.dff_query_id], dff_internal_query_result: query_result})
     # logger.info("one thread has stopped")
 
 
@@ -567,11 +565,11 @@ def query_index_mt(index, images, root_path, pack=-1):
     all_result = ImageResultList()
     for i in range(task_launched):
         result = result_queue.get()
-        result_df: ImageResultList = result[dff_internal_result_df]
+        query_result: ImageResultList = result[dff_internal_query_result]
 
-        if result_df is None or len(result_df) == 0:
+        if query_result is None or len(query_result) == 0:
             continue
-        for ir in result_df:
+        for ir in query_result:
             if ir.keep:
                 ir.pack_id = pack
                 all_result.add_image_result(ir)
