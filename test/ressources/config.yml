@@ -1,30 +1,155 @@
+# ==================================================================================================
+# PIMMI test configuration file - https://github.com/nrv/pimmi
+# - Generic parameters
+# - SIFT point extraction
+# - FAISS index creation
+# - Index querying
+# - Community detection
+
+
+# ==================================================================================================
+# Generic parameters
+nb_threads:
+  value: 8
+  help: "Nb. threads used for sift points extraction, index filling and querying. Defaults to 8.
+  Set the value according to your CPU core number."
+
+
+# ==================================================================================================
+# Part 1 - SIFT point extraction
+sift_resize_image:
+  value: True
+  help: "Should images be resized to have each dimension less than 'sift_max_image_dimension' before extracting
+  sift points. The default sift extraction parameters of Pimmi are set for a 512 pixels max dimension of resized
+  images. Defaults to True."
+
+sift_max_image_dimension:
+  value: 512
+  help: "Max width/heigth if images are resized. Defaults to 512."
+
+sift_nfeatures:
+  value: 1000
+  help: "OpenCV parameter : the number of best features to retain. The features are ranked by their scores
+  (measured in SIFT algorithm as the local contrast).
+  See https://docs.opencv.org/3.4/d7/d60/classcv_1_1SIFT.html.
+  Defaults to 1000 in Pimmi."
+
+sift_nOctaveLayers:
+  value: 1
+  help: "OpenCV parameter : the number of layers in each octave. 3 is the value used in D. Lowe paper. 
+  The number of octaves is computed automatically from the image resolution.
+  See https://docs.opencv.org/3.4/d7/d60/classcv_1_1SIFT.html.
+  Defaults to 1 in Pimmi."
+
+sift_contrastThreshold:
+  value: 0.1
+  help: "OpenCV parameter : the contrast threshold used to filter out weak features in semi-uniform (low-contrast)
+  regions. The larger the threshold, the less features are produced by the detector.
+  See https://docs.opencv.org/3.4/d7/d60/classcv_1_1SIFT.html.
+  Defaults to 0.1 in Pimmi."
+
+sift_edgeThreshold:
+  value: 10
+  help: "OpenCV parameter : the threshold used to filter out edge-like features. Note that its meaning is different from 
+  the contrastThreshold, i.e. the larger the edgeThreshold, the less features are filtered out
+  (more features are retained).
+  See https://docs.opencv.org/3.4/d7/d60/classcv_1_1SIFT.html.
+  Defaults to 10 in Pimmi."
+
+sift_sigma:
+  value: 1.6
+  help: "OpenCV parameter : the sigma of the Gaussian applied to the input image at the octave #0. If your image
+  is captured with a weak camera with soft lenses, you might want to reduce the number. 
+  See https://docs.opencv.org/3.4/d7/d60/classcv_1_1SIFT.html.
+  Defaults to 1.6 in Pimmi."
+
+
+# ==================================================================================================
+# Part 2.1 - FAISS index creation
 index_type:
   value: "IDMap,Flat"
-  help: "Faiss index type. See
+  help: "Faiss index type. See all possible values at 
   https://github.com/facebookresearch/faiss/wiki/Lower-memory-footprint#simplifying-index-construction.
-  Defaults to 'IVF1024,Flat'"
+  Defaults to 'IVF1024,Flat', for huge database, you may consider 'OPQ16_64,IVF65536_HNSW32,PQ16'."
 
-nb_threads: 8
-do_resize_image: True
-max_image_dimension: 512
-do_preserve_aspect_ratio_for_quantized_coord: True
-nb_images_to_train_index: 25000
-each_sift_nn: 1000
-do_filter_on_sift_dist: True
-sift_dist_ratio_threshold: 0.6
-adaptative_sift_nn: True
-do_filter_on_sift_match_ratio: False
-sift_match_ratio_threshold: 0.01
-do_filter_on_sift_match_nb: True
-sift_match_nb_threshold: 5
-sift_match_nb_after_ransac_threshold: 5
-do_ransac: True
-remove_query_from_results: True
+index_nb_images_to_train:
+  value: 25000
+  help: "Max nb. of image used to train the index structure. Defaults to 25000."
 
-nb_img: 0
 
-sift_nfeatures: 1000
-sift_nOctaveLayers: 1
-sift_contrastThreshold: 0.1
-sift_edgeThreshold: 10
-sift_sigma: 1.6
+# ==================================================================================================
+# Part 2.2 - Index querying
+query_sift_knn:
+  value: 1000
+  help: "Nb. of nearest neighbours retrieved for each sift point queried in the index. Defaults to 1000."
+
+query_dist_filter:
+  value: True
+  help: "Should the nearest neighbours be filtered out if their distance to the query point is greater than the closest
+  point distance times the 'query_dist_ratio_threshold'. Simulates an adaptative range query. Defaults to True."
+
+query_dist_ratio_threshold:
+  value: 0.6
+  help: "See 'query_dist_filter'. Defaults to 0.6."
+
+query_adaptative_sift_knn:
+  value: True
+  help: "If 'query_dist_filter' is True but no result points have been filtered out (they are all at a distance that is
+  close enough to the query point to stay below the 'query_dist_ratio_threshold'), then relaunch a KNN query to retrieve
+  more points. This step is done at most 'query_adaptative_knn_max_step' times, multiplying the number of points
+  retrieved by 'query_adaptative_knn_mult' each time. Defaults to True."
+
+query_adaptative_knn_mult:
+  value: 4
+  help: "See 'query_adaptative_sift_knn'. Defaults to 4."
+
+query_adaptative_knn_max_step:
+  value: 3
+  help: "See 'query_adaptative_sift_knn'. Defaults to 3."
+
+query_match_ratio_filter:
+  value: False
+  help: "Should the retrieved images be filtered out if the proportion of query points that have matched is less
+  than 'query_match_ratio_threshold'. Defaults to False."
+
+query_match_ratio_threshold:
+  value: 0.01
+  help: "See 'query_match_ratio_filter'. Defaults to 0.01."
+
+query_match_nb_filter:
+  value: True
+  help: "Should the retrieved images be filtered out if less than 'query_match_nb_threshold' query points
+  have matched. Defaults to True."
+
+query_match_nb_threshold:
+  value: 5
+  help: "See 'query_match_nb_filter'. Defaults to 5."
+
+query_ransac:
+  value: True
+  help: "Should the geometric consistency of the matched points be assessed by launching the RANSAC algorithm to find
+  homography. Currently, only the estimateAffinePartial2D method of OpenCV is used, it estimates an optimal 2D affine
+  transformation with 4 degrees of freedom limited to combinations of translation, rotation, and uniform scaling.
+  See https://docs.opencv.org/3.4/d9/d0c/group__calib3d.html#gad767faff73e9cbd8b9d92b955b50062d.
+  Defaults to True."
+
+query_match_nb_ransac_filter:
+  value: True
+  help: "Should the retrieved images be filtered out if less than 'query_match_nb_ransac_threshold' query points
+  are still have matching after the geometric consistency is enforced. Defaults to True."
+
+query_match_nb_ransac_threshold:
+  value: 5
+  help: "See 'query_match_nb_ransac_filter'. Defaults to 5."
+
+query_remove_from_results:
+  value: True
+  help: "Remove the query image from the results. Defaults to True."
+
+
+# ==================================================================================================
+# Part 3 - Graph processing for community detection
+
+# TODO
+
+

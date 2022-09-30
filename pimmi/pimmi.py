@@ -23,6 +23,7 @@ grid_sz = grid_d * grid_d
 grid_mask = grid_sz - 1
 grid_shift = grid_bits_per_dim * 2
 grid_x_mask = grid_d - 1
+grid_aspect_ratio = True
 
 dff_internal_meta = "meta"
 dff_internal_id_generator = "id_generator"
@@ -41,10 +42,10 @@ logger = logging.getLogger("pimmi")
 
 def resize_if_needed(img):
     resized = False
-    if prm.do_resize_image:
+    if prm.sift_resize_image:
         h, w = img.shape
-        if h > prm.max_image_dimension or w > prm.max_image_dimension:
-            r = prm.max_image_dimension / max(h, w)
+        if h > prm.sift_max_image_dimension or w > prm.sift_max_image_dimension:
+            r = prm.sift_max_image_dimension / max(h, w)
             img = cv.resize(img, (int(r * w), int(r * h)), interpolation=cv.INTER_AREA)
             resized = True
     return img, resized
@@ -86,7 +87,7 @@ def extract_sift(file, image_id, sift, pack=-1):
 
 
 def point_to_full_id(image_id, pt, img_w, img_h):
-    if prm.do_preserve_aspect_ratio_for_quantized_coord:
+    if grid_aspect_ratio:
         gx = int(math.floor(pt[0]))
         gy = int(math.floor(pt[1]))
     else:
@@ -147,11 +148,11 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
             constants.dff_image_id: index[dff_internal_id_generator]})
         index[dff_internal_id_generator] = index[dff_internal_id_generator] + 1
         task_launched += 1
-        if only_empty_index and task_launched >= prm.nb_images_to_train_index:
+        if only_empty_index and task_launched >= prm.index_nb_images_to_train:
             break
 
     logger.info(
-        "nb tasks launched : " + str(task_launched) + " / " + str(prm.nb_images_to_train_index))
+        "nb tasks launched : " + str(task_launched) + " / " + str(prm.index_nb_images_to_train))
 
     all_ids = None
     all_features = None
@@ -172,7 +173,7 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
                 all_ids = []
             all_features.append(desc)
             all_ids.append(ids)
-        if all_ids is not None and len(all_ids) >= prm.nb_images_to_train_index:
+        if all_ids is not None and len(all_ids) >= prm.index_nb_images_to_train:
             all_features = np.vstack(all_features)
             all_ids = np.hstack(all_ids)
             if not index[dff_internal_faiss].is_trained:
@@ -435,10 +436,10 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
     if len(query_ids) > 0:
         result_images = dict()
         need_to_run_nn_again = True
-        current_nn = prm.each_sift_nn
-        max_hop = 3
+        current_nn = prm.query_sift_knn
+        max_hop = prm.query_adaptative_knn_max_step
         while need_to_run_nn_again and max_hop > 0:
-            if prm.do_ransac:
+            if prm.query_ransac:
                 kept_matches = MatchedPointList()
             all_knn_dist, all_knn_ids = index[dff_internal_faiss].search(query_desc, current_nn)
             result_images = dict()
@@ -447,7 +448,7 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                 filter_unknown_ids = knn_ids >= 0
                 knn_ids = knn_ids[filter_unknown_ids]
                 knn_dist = knn_dist[filter_unknown_ids]
-                if prm.do_filter_on_sift_dist and len(knn_ids) > 1:
+                if prm.query_dist_filter and len(knn_ids) > 1:
                     filter_zero_dist = knn_dist == 0
                     knn_ids_zero = knn_ids[filter_zero_dist]
                     filter_nonzero_dist = ~filter_zero_dist
@@ -455,10 +456,10 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                     knn_dist = knn_dist[filter_nonzero_dist]
                     if len(knn_dist) > 0:
                         first_non_zero_dist = knn_dist[0]
-                        filter_on_dist_ratio = first_non_zero_dist / knn_dist > prm.sift_dist_ratio_threshold
+                        filter_on_dist_ratio = first_non_zero_dist / knn_dist > prm.query_dist_ratio_threshold
                         knn_ids_nonzero = knn_ids_nonzero[filter_on_dist_ratio]
                         knn_ids_filtered = np.concatenate((knn_ids_zero, knn_ids_nonzero))
-                        if prm.adaptative_sift_nn and len(knn_ids_filtered) == len(knn_ids):
+                        if prm.query_adaptative_sift_knn and len(knn_ids_filtered) == len(knn_ids):
                             current_nn_is_enough = False
                             logger.info("    . " + str(query_id) + " reached knn (" + str(current_nn) + ") limit "
                                         + str(knn_dist[-1]) + " / " + str(first_non_zero_dist))
@@ -466,7 +467,7 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                         else:
                             knn_ids = knn_ids_filtered
 
-                if prm.do_ransac:
+                if prm.query_ransac:
                     kept_matches.add_new_matched_points(query_id, knn_ids)
 
                 for result_image_id in np.unique(full_id_to_image_id(knn_ids)):
@@ -475,19 +476,19 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
             if current_nn_is_enough:
                 need_to_run_nn_again = False
             else:
-                current_nn = current_nn * 4
+                current_nn = current_nn * prm.query_adaptative_knn_mult
                 max_hop -= 1
 
         result_df.add_new_image_results(len(query_ids), result_images)
 
-        if prm.do_filter_on_sift_match_ratio:
+        if prm.query_match_ratio_filter:
             result_df.filter_on_sift_match_ratio(int(math.floor(len(query_ids) * prm.sift_match_ratio_threshold)))
 
-        if prm.do_filter_on_sift_match_nb:
-            result_df.filter_on_sift_match_nb(prm.sift_match_nb_threshold)
+        if prm.query_match_nb_filter:
+            result_df.filter_on_sift_match_nb(prm.query_match_nb_threshold)
 
-        if prm.do_ransac:
-            if prm.do_filter_on_sift_match_ratio or prm.do_filter_on_sift_match_nb:
+        if prm.query_ransac:
+            if prm.query_match_ratio_filter or prm.query_match_nb_filter:
                 kept_matches.keep_only_images(result_df.get_kept_image_ids())
 
             ransac_df = {}
@@ -522,10 +523,11 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                 ir.query_path = query_path
                 ir.query_width = query_width
                 ir.query_height = query_height
-                if prm.remove_query_from_results and ir.result_path == ir.query_path:
+                if prm.query_remove_from_results and ir.result_path == ir.query_path:
                     ir.keep = False
 
-            result_df.filter_on_ransac_sift_match_nb(prm.sift_match_nb_after_ransac_threshold)
+            if prm.query_match_nb_ransac_threshold:
+                result_df.filter_on_ransac_sift_match_nb(prm.query_match_nb_ransac_threshold)
     return result_df
 
 

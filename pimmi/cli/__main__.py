@@ -144,11 +144,9 @@ def fill(image_dir, index_name, index_path, config_path, erase=False, force=Fals
                     prm.sift_sigma, prm.nb_threads)
 
     if erase or not index_exists:
-        logger.info("using " + str(prm.nb_images_to_train_index) + " images to train and fill index")
         filled_index = create_index_mt(prm.index_type, images, image_dir, sift)
     else:
         previous_index = load_index(faiss_index, faiss_meta)
-        logger.info("using " + str(prm.nb_images_to_train_index) + " images to fill index")
         filled_index = fill_index_mt(previous_index, images, image_dir, sift)
 
     save_index(filled_index, faiss_index, faiss_meta)
@@ -168,8 +166,8 @@ def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, 
         images = images.head(nb_img)
 
     if simple:
-        prm.do_filter_on_sift_dist = False
-        prm.adaptative_sift_nn = False
+        prm.query_dist_filter = False
+        prm.query_adaptative_sift_knn = False
 
     logger.info("total number of queries " + str(len(images)))
     # images = images.sort_values(by=constants.dff_image_path)
