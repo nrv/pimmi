@@ -1,7 +1,11 @@
 # PIMMI : Python IMage MIning
 Library allowing visual search in a corpus of images, from Twitter... or elsewhere.
 
-SIFT interest points, clustering, based on OpenCV and Faiss, multithreaded.
+The basic features are :
+- SIFT interest points ([OpenCV](https://opencv.org/) implementation)
+- efficient similarity search ([FAISS](https://github.com/facebookresearch/faiss) implementation)
+- clustering via graph community detection (#TODO) 
+- multithreaded
 
 Very preliminary stuff for now.
 
@@ -15,24 +19,23 @@ pip install pimmi
 
 ## Demo
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# --- Play with a very small dataset
-# Create a default index structure and fill it with the demo dataset  
-python3 index_dataset.py --action fill --thread 16 --index "IVF1024,Flat" --save_faiss index/small_dataset.ivf1024 --images_dir demo_dataset/small_dataset
-
-# Query the same dataset on this index
-python3 query_dataset.py --simple --thread 16 --load_faiss index/small_dataset.ivf1024 --save_mining index/small_dataset.ivf1024.mining --images_mining --images_root demo_dataset/dataset1
-
-
 # --- Play with the demo dataset 1
-python3 index_dataset.py --action fill --thread 16 --index "IVF1024,Flat" --save_faiss index/dataset1.ivf1024 --images_dir demo_dataset/dataset1
-python3 query_dataset.py --thread 16 --load_faiss index/dataset1.ivf1024 --save_mining index/dataset1.ivf1024.mining --images_mining --images_root demo_dataset/dataset1
+# Create a default index structure and fill it with the demo dataset. An 'index' directory will be created, it will
+# contain the 2 files of the pimmi index : dataset1.IVF1024,Flat.faiss and dataset1.IVF1024,Flat.meta
+pimmi fill demo_dataset/dataset1 dataset1
+
+# Query the same dataset on this index, the results will be stored in index/dataset1.IVF1024,Flat.mining_000000.csv
+pimmi query demo_dataset/dataset1 dataset1
 
 # Post process the mining results in order to visualize them
-python3 fuse_query_results.py
-python3 generate_cluster_viz.py
+# TODO
+
+# You can also play with the configuration parameters. First, generate a default configuration file
+pimmi create-config my_pimmi_conf.yml
+
+# Then simply use this configuration file to relaunch the mining steps (erasing without prompt the previous data)
+pimmi fill --erase --force --config-path my_pimmi_conf.yml demo_dataset/dataset1 dataset1
+pimmi query --config-path my_pimmi_conf.yml demo_dataset/dataset1 dataset1
 ```
 
 Happy hacking !
