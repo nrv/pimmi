@@ -12,10 +12,12 @@ import shutil
 import logging
 import argparse
 
-from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
 import pimmi.toolbox as tbx
-from pimmi.cli.config import parameters as prm
 import pimmi.pimmi_parameters as constants
+from pimmi.clusters import generate_clusters
+from pimmi.cli.config import parameters as prm
+from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
+
 
 logger = logging.getLogger(__name__)
 parser = argparse.ArgumentParser(prog="pimmi", description='PIMMI: a command line tool for image mining.')
@@ -75,6 +77,15 @@ def load_cli_parameters():
                                                               " create a config file template.")
     parser_query.add_argument("--simple", action="store_true", default=False)
     parser_query.set_defaults(func=query)
+
+    # CLUSTERS command
+    clusters_query = subparsers.add_parser('clusters', help="Create clusters from query results.")
+    clusters_query.add_argument('index_name', type=str, metavar='index-name')
+    clusters_query.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
+                                                             "Defaults to './index'", default="./index")
+    clusters_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
+                                                              " create a config file template.")
+    clusters_query.set_defaults(func=clusters)
 
     # CONFIG-PARAMS command
     parser_config_params = subparsers.add_parser('config-params',
@@ -186,6 +197,15 @@ def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, 
         )
         if query_result:
             query_result.to_csv(pack_result_file)
+
+
+def clusters(index_name, index_path, config_path, **kwargs):
+    check_custom_config(config_path)
+    faiss_index, faiss_meta = make_index_path(index_path, index_name, kwargs["index_type"])
+    mining_files = faiss_index.replace("faiss", "mining")
+    mining_files_pattern = mining_files + "_*"
+    clusters_file = mining_files + ".clusters.json"
+    generate_clusters(mining_files_pattern, faiss_meta, clusters_file)
 
 
 def make_index_path(index_path, index_name, index_type):
