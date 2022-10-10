@@ -201,7 +201,7 @@ def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, 
 
 def clusters(index_name, index_path, config_path, **kwargs):
     check_custom_config(config_path)
-    faiss_index, faiss_meta = make_index_path(index_path, index_name, kwargs["index_type"])
+    faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
     mining_files = faiss_index.replace("faiss", "mining")
     mining_files_pattern = mining_files + "_*"
     clusters_file = mining_files + ".clusters.json"
