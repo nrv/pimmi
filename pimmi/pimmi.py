@@ -282,9 +282,13 @@ def get_index_images(index, path_prefix):
     return all_images
 
 
-def query_index_extract_single_image(index, image_file, relative_image_path, sift, query_id=0, pack=-1):
-    query_ids, query_kp, query_desc, query_width, query_height = extract_sift(image_file, query_id, sift, pack=pack)
-    return query_index_single_image(index, query_ids, query_desc, query_width, query_height, relative_image_path)
+def query_index_extract_single_image(index, image_file, relative_image_path, sift, query_image_id=0, pack=-1):
+    query_ids, query_kp, query_desc, query_width, query_height = extract_sift(
+        image_file, query_image_id, sift, pack=pack
+    )
+    return query_index_single_image(
+        index, query_ids, query_desc, query_width, query_height, relative_image_path, query_image_id
+    )
 
 
 class ImageResultEncoder(JSONEncoder):
@@ -339,17 +343,18 @@ class ImageResultList:
     def add_image_result(self, r: ImageResult):
         self.__images.append(r)
 
-    def add_new_image_result(self, query_nb_points, result_image_id, nb_match_total):
+    def add_new_image_result(self, query_nb_points, result_image_id, nb_match_total, query_image_id):
         r: ImageResult = ImageResult()
         r.keep = True
         r.query_nb_points = query_nb_points
         r.result_image_id = result_image_id.item()
+        r.query_image_id = query_image_id
         r.nb_match_total = nb_match_total
         self.add_image_result(r)
 
-    def add_new_image_results(self, query_nb_points, result_images):
+    def add_new_image_results(self, query_nb_points, result_images, query_image_id):
         for result_image_id, nb_match_total in result_images.items():
-            self.add_new_image_result(query_nb_points, result_image_id, nb_match_total)
+            self.add_new_image_result(query_nb_points, result_image_id, nb_match_total, query_image_id)
 
     def filter_on_sift_match_ratio(self, min_nb_match):
         for image in self.__images:
@@ -371,10 +376,10 @@ class ImageResultList:
 
     def to_csv(self, file):
         with open(file, 'w', newline='') as csvfile:
-            # 'keep', 'keep_smr', 'keep_smn', 'keep_rns', 'query_image_id', 'result_image_id'
-            fieldnames = ['pack_id', 'query_path', 'result_path', 'nb_match_total', 'nb_match_ransac',
-                          'ransac_ratio', 'query_nb_points', 'query_width', 'query_height', 'result_nb_points',
-                          'result_width', 'result_height']
+            # 'keep', 'keep_smr', 'keep_smn', 'keep_rns',
+            fieldnames = ['pack_id', 'query_image_id', 'result_image_id', 'query_path', 'result_path', 'nb_match_total',
+                          'nb_match_ransac', 'ransac_ratio', 'query_nb_points', 'query_width', 'query_height',
+                          'result_nb_points', 'result_width', 'result_height']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
             for i in self.__images:
@@ -428,10 +433,10 @@ class MatchedPointList:
         return zip(image_ids, matched_points)
 
 
-def query_index_single_image(index, query_ids, query_desc, query_width, query_height, query_path):
+def query_index_single_image(index, sift_query_ids, query_desc, query_width, query_height, query_path, image_query_id):
     query_result: ImageResultList = ImageResultList()
     kept_matches: MatchedPointList = MatchedPointList()
-    if len(query_ids) > 0:
+    if len(sift_query_ids) > 0:
         result_images = dict()
         need_to_run_nn_again = True
         current_nn = prm.query_sift_knn
@@ -442,7 +447,7 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
             all_knn_dist, all_knn_ids = index[dff_internal_faiss].search(query_desc, current_nn)
             result_images = dict()
             current_nn_is_enough = True
-            for query_id, knn_ids, knn_dist in zip(query_ids, all_knn_ids, all_knn_dist):
+            for sift_query_id, knn_ids, knn_dist in zip(sift_query_ids, all_knn_ids, all_knn_dist):
                 filter_unknown_ids = knn_ids >= 0
                 knn_ids = knn_ids[filter_unknown_ids]
                 knn_dist = knn_dist[filter_unknown_ids]
@@ -459,14 +464,14 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                         knn_ids_filtered = np.concatenate((knn_ids_zero, knn_ids_nonzero))
                         if prm.query_adaptative_sift_knn and len(knn_ids_filtered) == len(knn_ids):
                             current_nn_is_enough = False
-                            logger.info("    . " + str(query_id) + " reached knn (" + str(current_nn) + ") limit "
+                            logger.info("    . " + str(sift_query_id) + " reached knn (" + str(current_nn) + ") limit "
                                         + str(knn_dist[-1]) + " / " + str(first_non_zero_dist))
                             break
                         else:
                             knn_ids = knn_ids_filtered
 
                 if prm.query_ransac:
-                    kept_matches.add_new_matched_points(query_id, knn_ids)
+                    kept_matches.add_new_matched_points(sift_query_id, knn_ids)
 
                 for result_image_id in np.unique(full_id_to_image_id(knn_ids)):
                     result_images[result_image_id] = result_images.get(result_image_id, 0) + 1
@@ -477,10 +482,10 @@ def query_index_single_image(index, query_ids, query_desc, query_width, query_he
                 current_nn = current_nn * prm.query_adaptative_knn_mult
                 max_hop -= 1
 
-        query_result.add_new_image_results(len(query_ids), result_images)
+        query_result.add_new_image_results(len(sift_query_ids), result_images, image_query_id)
 
         if prm.query_match_ratio_filter:
-            query_result.filter_on_sift_match_ratio(int(math.floor(len(query_ids) * prm.sift_match_ratio_threshold)))
+            query_result.filter_on_sift_match_ratio(int(math.floor(len(sift_query_ids) * prm.sift_match_ratio_threshold)))
 
         if prm.query_match_nb_filter:
             query_result.filter_on_sift_match_nb(prm.query_match_nb_threshold)
@@ -539,7 +544,7 @@ def query_index_mt_function(index, sift, task_queue, result_queue):
             query_id=task[constants.dff_query_id],
             pack=task[dff_internal_pack_id]
         )
-        result_queue.put({constants.dff_query_id: task[constants.dff_query_id], dff_internal_query_result: query_result})
+        result_queue.put(query_result)
     # logger.info("one thread has stopped")
 
 
@@ -558,14 +563,20 @@ def query_index_mt(index, images, root_path, pack=-1):
     for image in images:
         image_path = image[constants.dff_image_path]
         rel_image_path = os.path.relpath(image_path, root_path)
-        task_queue.put({constants.dff_image_path: image_path, constants.dff_image_relative_path: rel_image_path,
-                        constants.dff_query_id: image[constants.dff_image_id], dff_internal_pack_id: pack})
+        task_queue.put(
+            {
+                constants.dff_image_path: image_path,
+                constants.dff_image_relative_path: rel_image_path,
+                constants.dff_query_id: image[constants.dff_image_id],
+                dff_internal_pack_id: pack
+            }
+        )
         task_launched += 1
 
     all_result = ImageResultList()
     for i in range(task_launched):
         result = result_queue.get()
-        query_result: ImageResultList = result[dff_internal_query_result]
+        query_result: ImageResultList = result
 
         if query_result is None or len(query_result) == 0:
             continue
