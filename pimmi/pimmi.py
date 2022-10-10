@@ -541,7 +541,7 @@ def query_index_mt_function(index, sift, task_queue, result_queue):
             task[constants.dff_image_path],
             task[constants.dff_image_relative_path],
             sift,
-            query_id=task[constants.dff_query_id],
+            query_image_id=task[constants.dff_query_id],
             pack=task[dff_internal_pack_id]
         )
         result_queue.put(query_result)
