@@ -2,14 +2,16 @@
 # Pimmi Functional Tests
 # =============================================================================
 import csv
+import json
 from glob import glob
 from collections import defaultdict
 from os import remove
 from os.path import join, dirname
 
-from test.utils import prm
-
-SMALL_DATASET_QUERY_RESULTS = join(dirname(__file__), "ressources", "query_results.csv")
+RESSOURCES_PATH = join(dirname(__file__), "ressources")
+SMALL_DATASET_QUERY_RESULTS = join(RESSOURCES_PATH, "query_results.csv")
+SMALL_DATASET_CLUSTERING_RESULTS = join(RESSOURCES_PATH, "clusters_results.json")
+TMP_FOLDER_PATH = join(RESSOURCES_PATH, "tmp")
 
 
 def load_query_results_from_file(file):
@@ -33,11 +35,20 @@ def load_query_results_from_file(file):
     return dict(query_results)
 
 
+def load_clusters_results_from_file(file):
+    with open(file, "r") as f:
+        clusters = json.loads(f.read())
+
+    clusters_results = {}
+    for cluster in clusters:
+        clusters_results[cluster.pop("cluster")] = cluster
+    return clusters_results
+
+
 class TestPipeline(object):
-    def test_fill_query(self):
-        tmp_folder_path = join(dirname(__file__), "ressources", "tmp")
+    def test_query(self):
         results = load_query_results_from_file(SMALL_DATASET_QUERY_RESULTS)
-        tested_results = load_query_results_from_file(join(tmp_folder_path, "small.IDMap,Flat.mining_000000.csv"))
+        tested_results = load_query_results_from_file(join(TMP_FOLDER_PATH, "small.IDMap,Flat.mining_000000.csv"))
 
         for query in results:
             assert query in tested_results, 'The line corresponding to query %s is missing' % (query)
@@ -53,6 +64,22 @@ class TestPipeline(object):
                                                                                                     ' pair (%s, %s)'\
                                                                                                     % (column, query,
                                                                                                        result)
-        for file in glob(join(tmp_folder_path, "*")):
-            remove(file)
 
+    def test_cluster(self):
+        results = load_clusters_results_from_file(SMALL_DATASET_CLUSTERING_RESULTS)
+        tested_results = load_clusters_results_from_file(join(TMP_FOLDER_PATH, "small.IDMap,Flat.mining.clusters.json"))
+
+        for cluster in results:
+            assert cluster in tested_results, 'Cluster %s is missing' % (cluster)
+            for k, v in results[cluster].items():
+                assert k in tested_results[cluster], 'Key %s is missing in cluster %s' %(k, cluster)
+                if isinstance(v, list):
+                    assert sorted(tested_results[cluster][k]) == sorted(v), 'Different values for %s in cluster %s' %(
+                        k, cluster
+                    )
+                else:
+                    if k != "sample_path":
+                        assert tested_results[cluster][k] == v, 'Different values for %s in cluster %s' %(k, cluster)
+
+        for file in glob(join(TMP_FOLDER_PATH, "*")):
+            remove(file)
