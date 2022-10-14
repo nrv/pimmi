@@ -1,10 +1,11 @@
 import glob
-import logging
 import pickle
+import logging
 import pandas as pd
 import numpy as np
 import igraph as ig
-import pimmi.pimmi as pimmi
+import casanova
+
 import pimmi.pimmi_parameters as constants
 
 
@@ -19,64 +20,26 @@ def from_cluster_2col_table_to_list(data, keycol, valcol):
     return pd.DataFrame({keycol: ukeys, valcol: [list(a) for a in arrays]})
 
 
-def generate_clusters(results_pattern, merged_meta_file, viz_data_file):
-    pd.set_option('display.max_rows', 500)
-    pd.set_option('display.max_columns', 500)
-    pd.set_option('display.width', 1000)
-    pd.set_option('display.max_colwidth', 1000)
-
-    logger.info("Loading query results")
-    all_files = glob.glob(results_pattern)
-    frames_list = []
+def generate_graph_from_files(file_patterns, min_nb_match_ransac=10):
+    all_files = glob.glob(file_patterns)
 
     for filename in all_files:
-        similarities = pd.read_csv(filename, index_col=None, header=0)
-        similarities = similarities.query('query_image_id != result_image_id and nb_match_ransac >= 10')
+        with open(filename) as f:
+            reader = casanova.reader(f)
+            query_image_id = reader.headers["query_image_id"]
+            result_image_id = reader.headers["result_image_id"]
+            nb_match_ransac = reader.headers["nb_match_ransac"]
 
-        frames_list.append(similarities)
+            for row in reader:
+                if row[query_image_id] != row[result_image_id] and int(row[nb_match_ransac]) >= min_nb_match_ransac:
+                    yield int(row[query_image_id]), int(row[result_image_id]), int(row[nb_match_ransac])
 
-    all_similarities = pd.concat(frames_list, axis=0, ignore_index=True)
-    all_similarities[constants.dff_result_path] = "/" + all_similarities[constants.dff_result_path]
-    all_similarities[constants.dff_query_path] = "/" + all_similarities[constants.dff_query_path]
 
-    logger.info(" ~ similarity file : " + str(len(all_similarities)) + " edges")
-    # print(all_similarities.head(5))
+def generate_clusters(results_pattern, merged_meta_file, viz_data_file):
 
-    with open(merged_meta_file, 'rb') as f:
-        meta_json = pickle.load(f)
+    logger.info("Loading query results")
 
-    index_meta_df = pd.DataFrame(meta_json.items(), columns=["tmp_id", "tmp_stuff"])
-    unnested = pd.json_normalize(index_meta_df["tmp_stuff"])
-    all_meta = index_meta_df.join(unnested).drop(columns=["tmp_id", "tmp_stuff"])
-
-    logger.info("all_meta : %d", len(all_meta))
-
-    # all_meta = all_meta.sort_values(by=[prm.dff_nb_points], ascending=True)
-    # TODO check comment below
-    # all_meta = all_meta[~pd.isna(all_meta[prm.dff_nb_points])]
-    logger.info("all_meta filtered : %d", len(all_meta))
-    # print(all_meta.head(5))
-
-    all_similarities = all_similarities[["query_image_id", "result_image_id", "nb_match_ransac"]]
-
-    all_results_with_meta = pd.merge(all_similarities, all_meta, how="left",
-                                     left_on="query_image_id", right_on="image_id")
-    all_results_with_meta = pd.merge(all_results_with_meta, all_meta, how="left", left_on="result_image_id",
-                                     right_on="image_id", suffixes=("_query", "_result"))
-    all_results_with_meta["query_ransac_ratio"] = all_results_with_meta["nb_match_ransac"] / \
-                                                  all_results_with_meta["nb_points_query"]
-    all_results_with_meta["result_ransac_ratio"] = all_results_with_meta["nb_match_ransac"] / \
-                                                   all_results_with_meta["nb_points_result"]
-    logger.info("all_results_with_meta : %d edges", len(all_results_with_meta))
-
-    all_results_with_meta_graph = all_results_with_meta.query('nb_match_ransac >= 10')
-    # all_results_with_meta_graph = all_results_with_meta.query('nb_match_ransac >= 10 and (query_ransac_ratio > 0.8 or result_ransac_ratio > 0.8)')
-    # all_results_with_meta_graph = all_results_with_meta.query('nb_match_ransac >= 300 and (query_ransac_ratio > 0.5 or result_ransac_ratio > 0.5)')
-    logger.info("all_results_with_meta_graph : %d edges", len(all_results_with_meta_graph))
-    # print(all_results_with_meta_graph.head(100))
-
-    g = ig.Graph.TupleList([(row["query_image_id"], row["result_image_id"], row["nb_match_ransac"])
-                            for index, row in all_results_with_meta_graph.iterrows()], directed=True, weights=True)
+    g = ig.Graph.TupleList(generate_graph_from_files(results_pattern), directed=True, weights=True)
 
     logger.info("Number of vertices in the graph: %d", g.vcount())
     logger.info("Number of edges in the graph: %d", g.ecount())
@@ -87,6 +50,13 @@ def generate_clusters(results_pattern, merged_meta_file, viz_data_file):
     logger.info("Connected components in the graph: %d", len(comp))
     clusters = pd.DataFrame(list(zip(g.vs["name"], comp.membership)), columns=['image_id', 'cluster'])
     logger.info("Images in clusters : %d", len(clusters))
+
+    with open(merged_meta_file, 'rb') as f:
+        meta_json = pickle.load(f)
+
+    index_meta_df = pd.DataFrame(meta_json.items(), columns=["tmp_id", "tmp_stuff"])
+    unnested = pd.json_normalize(index_meta_df["tmp_stuff"])
+    all_meta = index_meta_df.join(unnested).drop(columns=["tmp_id", "tmp_stuff"])
 
     clusters_with_meta = pd.merge(clusters, all_meta, how="left", left_on="image_id", right_on="image_id")
     # print(clusters_with_meta.head(10))

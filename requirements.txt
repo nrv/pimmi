@@ -9,3 +9,4 @@ pytest
 twine
 wheel
 pyyaml
+casanova

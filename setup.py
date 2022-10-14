@@ -25,7 +25,8 @@ setup(name='pimmi',
         "matplotlib",
         "python-igraph",
         "opencv-python",
-        "pyyaml"
+        "pyyaml",
+        "casanova"
       ],
       entry_points={
         'console_scripts': [
