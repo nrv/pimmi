@@ -30,7 +30,7 @@ pimmi fill demo_dataset/dataset1 dataset1
 pimmi query demo_dataset/dataset1 dataset1
 
 # Post process the mining results in order to visualize them
-# TODO
+pimmi clusters dataset1
 
 # You can also play with the configuration parameters. First, generate a default configuration file
 pimmi create-config my_pimmi_conf.yml
