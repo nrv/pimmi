@@ -10,7 +10,7 @@ from os.path import join, dirname
 
 RESSOURCES_PATH = join(dirname(__file__), "ressources")
 SMALL_DATASET_QUERY_RESULTS = join(RESSOURCES_PATH, "query_results.csv")
-SMALL_DATASET_CLUSTERING_RESULTS = join(RESSOURCES_PATH, "clusters_results.json")
+SMALL_DATASET_CLUSTERING_RESULTS = join(RESSOURCES_PATH, "clusters_results.csv")
 TMP_FOLDER_PATH = join(RESSOURCES_PATH, "tmp")
 
 
@@ -36,12 +36,13 @@ def load_query_results_from_file(file):
 
 
 def load_clusters_results_from_file(file):
-    with open(file, "r") as f:
-        clusters = json.loads(f.read())
-
     clusters_results = {}
-    for cluster in clusters:
-        clusters_results[cluster.pop("cluster")] = cluster
+
+    with open(file, "r") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            clusters_results[row[0]] = row[1:]
+
     return clusters_results
 
 
@@ -67,19 +68,11 @@ class TestPipeline(object):
 
     def test_cluster(self):
         results = load_clusters_results_from_file(SMALL_DATASET_CLUSTERING_RESULTS)
-        tested_results = load_clusters_results_from_file(join(TMP_FOLDER_PATH, "small.IDMap,Flat.mining.clusters.json"))
+        tested_results = load_clusters_results_from_file(join(TMP_FOLDER_PATH, "small.IDMap,Flat.mining.clusters.csv"))
 
-        for cluster in results:
-            assert cluster in tested_results, 'Cluster %s is missing' % (cluster)
-            for k, v in results[cluster].items():
-                assert k in tested_results[cluster], 'Key %s is missing in cluster %s' %(k, cluster)
-                if isinstance(v, list):
-                    assert sorted(tested_results[cluster][k]) == sorted(v), 'Different values for %s in cluster %s' %(
-                        k, cluster
-                    )
-                else:
-                    if k != "sample_path":
-                        assert tested_results[cluster][k] == v, 'Different values for %s in cluster %s' %(k, cluster)
+        for image, row in results.items():
+            assert image in tested_results, 'Image %s is missing' % (image)
+            assert tested_results[image] == row
 
         for file in glob(join(TMP_FOLDER_PATH, "*")):
             remove(file)

@@ -48,64 +48,27 @@ def generate_clusters(results_pattern, merged_meta_file, viz_data_file):
 
     comp = g.components(mode="weak")
     logger.info("Connected components in the graph: %d", len(comp))
-    clusters = pd.DataFrame(list(zip(g.vs["name"], comp.membership)), columns=['image_id', 'cluster'])
-    logger.info("Images in clusters : %d", len(clusters))
 
     with open(merged_meta_file, 'rb') as f:
         meta_json = pickle.load(f)
 
-    index_meta_df = pd.DataFrame(meta_json.items(), columns=["tmp_id", "tmp_stuff"])
-    unnested = pd.json_normalize(index_meta_df["tmp_stuff"])
-    all_meta = index_meta_df.join(unnested).drop(columns=["tmp_id", "tmp_stuff"])
-
-    clusters_with_meta = pd.merge(clusters, all_meta, how="left", left_on="image_id", right_on="image_id")
-    # print(clusters_with_meta.head(10))
-
-    # summary_clusters = clusters_with_meta.groupby("cluster").agg({prm.mex_nbSeen: ['sum', 'count'],
-    #                                                               prm.mex_relative_path: ['first']})
-    # summary_clusters.columns = ['nb_seen', 'nb_images', 'sample_path']
-    # summary_clusters = summary_clusters.reset_index()
-    # logger.info("%d distinct clusters", len(summary_clusters))
-    # summary_clusters = summary_clusters.sort_values(by=['nb_seen', 'nb_images'], ascending=False)
-
-    summary_clusters = clusters_with_meta.groupby("cluster").agg({constants.dff_image_path: ['first', 'count']})
-    summary_clusters.columns = ['sample_path', 'nb_images']
-    summary_clusters = summary_clusters.reset_index()
-    logger.info("%d distinct clusters", len(summary_clusters))
-
     sub_graphs = comp.subgraphs()
-    for cluster_id, sg in enumerate(sub_graphs):
-        # cluster_id = 1
-        # sg = sub_graphs[cluster_id]
-        nb_points = sorted(clusters_with_meta[clusters_with_meta["cluster"] == cluster_id]["nb_points"])
-        sum_weight = list(range(1, len(nb_points) + 1))
-        sum_weight.reverse()
-        max_theoretical_matches = 2 * sum([i * j for i, j in zip(nb_points, sum_weight)])
-        nb_matches = sum(sg.es["weight"])
-        quality = nb_matches / max_theoretical_matches
-        summary_clusters.loc[cluster_id, "match_quality"] = quality
-        logger.info(
-            "cluster %d has %d vertices and %d edges, quality index : %f", cluster_id, sg.vcount(), sg.ecount(), quality
-        )
+    with open(viz_data_file, "w") as f:
+        writer = casanova.writer(f, ["image_id", "path", "nb_points", "degree", "cluster_id", "quality"])
+        for cluster_id, sg in enumerate(sub_graphs):
+            nb_points = []
+            paths = []
+            for image_id in sg.vs["name"]:
+                meta_image = meta_json[image_id]
+                nb_points.append(meta_image["nb_points"])
+                paths.append(meta_image["path"])
+            sum_weight = range(len(nb_points), 0, -1)
+            max_theoretical_matches = 2 * sum([i * j for i, j in zip(sorted(nb_points), sum_weight)])
+            nb_matches = sum(sg.es["weight"])
+            quality = nb_matches / max_theoretical_matches
 
-    print(summary_clusters.head(10))
-
-    clusters_viz = from_cluster_2col_table_to_list(
-        clusters_with_meta[["cluster", constants.dff_image_path]],
-        "cluster",
-        "images"
-    )
-    clusters_viz = pd.merge(clusters_viz, summary_clusters, how="left", left_on="cluster", right_on="cluster")
-    clusters_viz = clusters_viz.sort_values(by=['nb_images'], ascending=False)
-    print(clusters_viz.head(10))
-
-    # viz_data = list(clusters_viz["relativePath"])
-    # # print(viz_data[0:5])
-    # with open(viz_data_file, 'w') as f:
-    #     json.dump(viz_data, f)
-    # f.close()
-
-    clusters_viz.to_json(viz_data_file, orient="records")
+            for node, path, nb in zip(sg.vs, paths, nb_points):
+                writer.writerow([node["name"], path, nb, node.degree(), cluster_id, quality])
 
 
 if __name__ == '__main__':
