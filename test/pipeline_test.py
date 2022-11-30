@@ -42,7 +42,7 @@ def load_clusters_results_from_file(file):
         reader = csv.reader(f)
         next(reader)
         for row in reader:
-            clusters_results[row[0]] = row[1:]
+            clusters_results[row[0]] = row[2:]
 
     return clusters_results
 
