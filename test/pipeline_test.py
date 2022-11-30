@@ -40,6 +40,7 @@ def load_clusters_results_from_file(file):
 
     with open(file, "r") as f:
         reader = csv.reader(f)
+        next(reader)
         for row in reader:
             clusters_results[row[0]] = row[1:]
 
@@ -54,7 +55,7 @@ class TestPipeline(object):
         for query in results:
             assert query in tested_results, 'The line corresponding to query %s is missing' % (query)
             for result in results[query]:
-                assert result in tested_results[query], 'The line corresponding to query, resultp pair ' \
+                assert result in tested_results[query], 'The line corresponding to query, result pair ' \
                                                         '(%s, %s) is missing' % (query, result)
                 for column in results[query][result]:
                     assert column in tested_results[query][result], 'missing column "%s" in tested file for query, ' \

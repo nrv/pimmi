@@ -54,7 +54,7 @@ def generate_clusters(results_pattern, merged_meta_file, viz_data_file):
 
     sub_graphs = comp.subgraphs()
     with open(viz_data_file, "w") as f:
-        writer = casanova.writer(f, ["image_id", "path", "nb_points", "degree", "cluster_id", "quality"])
+        writer = casanova.writer(f, ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"])
         for cluster_id, sg in enumerate(sub_graphs):
             nb_points = []
             paths = []
@@ -68,7 +68,7 @@ def generate_clusters(results_pattern, merged_meta_file, viz_data_file):
             quality = nb_matches / max_theoretical_matches
 
             for node, path, nb in zip(sg.vs, paths, nb_points):
-                writer.writerow([node["name"], path, nb, node.degree(), cluster_id, quality])
+                writer.writerow([path, node["name"], nb, node.degree(), cluster_id, quality])
 
 
 if __name__ == '__main__':
