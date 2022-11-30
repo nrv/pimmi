@@ -9,7 +9,7 @@ import casanova
 logger = logging.getLogger("gener")
 
 
-def generate_graph_from_files(file_patterns, min_nb_match_ransac=10):
+def generate_graph_from_files(file_patterns, min_nb_match_ransac):
     all_files = glob.glob(file_patterns)
 
     for filename in all_files:
@@ -24,11 +24,11 @@ def generate_graph_from_files(file_patterns, min_nb_match_ransac=10):
                     yield int(row[query_image_id]), int(row[result_image_id]), int(row[nb_match_ransac])
 
 
-def generate_clusters(results_pattern, merged_meta_file, viz_data_file):
+def generate_clusters(results_pattern, merged_meta_file, viz_data_file, nb_match_ransac):
 
     logger.info("Loading query results")
 
-    g = ig.Graph.TupleList(generate_graph_from_files(results_pattern), directed=True, weights=True)
+    g = ig.Graph.TupleList(generate_graph_from_files(results_pattern, nb_match_ransac), directed=True, weights=True)
 
     logger.info("Number of vertices in the graph: %d", g.vcount())
     logger.info("Number of edges in the graph: %d", g.ecount())

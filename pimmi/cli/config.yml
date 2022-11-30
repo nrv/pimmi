@@ -149,7 +149,9 @@ query_remove_from_results:
 
 # ==================================================================================================
 # Part 3 - Graph processing for community detection
-
-# TODO
+nb_match_ransac:
+  value: 10
+  help: "Images are filtered out if less than 'nb_match_ransac' query points
+  have matched. Defaults to 10"
 
 
