@@ -1,23 +1,12 @@
 import glob
 import pickle
 import logging
-import pandas as pd
-import numpy as np
 import igraph as ig
 import casanova
-
-import pimmi.pimmi_parameters as constants
 
 
 # TODO parameters from command line
 logger = logging.getLogger("gener")
-
-
-def from_cluster_2col_table_to_list(data, keycol, valcol):
-    keys, values = data.sort_values(keycol).values.T
-    ukeys, index = np.unique(keys, True)
-    arrays = np.split(values, index[1:])
-    return pd.DataFrame({keycol: ukeys, valcol: [list(a) for a in arrays]})
 
 
 def generate_graph_from_files(file_patterns, min_nb_match_ransac=10):
