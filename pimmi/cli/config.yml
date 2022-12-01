@@ -154,4 +154,10 @@ nb_match_ransac:
   help: "Images are filtered out if less than 'nb_match_ransac' query points
   have matched. Defaults to 10"
 
+algo:
+  value: "components"
+  help: "Method used to detect communities in the image similarity graph. Use 'components' for connected components,
+  and 'louvain' for multi-level modularity optimization (Blondel, V. D., Guillaume, J.-L., Lambiotte, R., & 
+  Lefebvre, E. (2008))"
+
 

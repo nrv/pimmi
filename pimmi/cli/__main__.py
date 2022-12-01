@@ -205,7 +205,7 @@ def clusters(index_name, index_path, config_path, **kwargs):
     mining_files = faiss_index.replace("faiss", "mining")
     mining_files_pattern = mining_files + "_*"
     clusters_file = mining_files + ".clusters.csv"
-    generate_clusters(mining_files_pattern, faiss_meta, clusters_file, prm.nb_match_ransac)
+    generate_clusters(mining_files_pattern, faiss_meta, clusters_file, prm.nb_match_ransac, prm.algo)
 
 
 def make_index_path(index_path, index_name, index_type):
