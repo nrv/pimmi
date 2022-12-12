@@ -160,4 +160,8 @@ algo:
   and 'louvain' for multi-level modularity optimization (Blondel, V. D., Guillaume, J.-L., Lambiotte, R., & 
   Lefebvre, E. (2008))"
 
+edge_collapse:
+  value: "mean"
+  help: "If the chosen algo is 'louvain', method used to combine the edges of the image similarity graph when 
+  it is transformed into an undirected graph. Available values: 'mean', 'min', 'max', 'first', 'last', 'sum'."
 

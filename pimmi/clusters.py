@@ -23,7 +23,7 @@ def generate_graph_from_files(file_patterns, min_nb_match_ransac):
                     yield int(row[query_image_id]), int(row[result_image_id]), int(row[nb_match_ransac])
 
 
-def yield_communities(g, algo="components"):
+def yield_communities(g, algo="components", edge_collapse="mean"):
     comp = g.components(mode="weak")
     logger.info("Connected components in the graph: %d", len(comp))
     sub_graphs = comp.subgraphs()
@@ -34,7 +34,7 @@ def yield_communities(g, algo="components"):
             yield nb_matches, component_id, sg.vs["name"], sg.vs.degree()
 
         elif algo == "louvain":
-            sg.to_undirected(combine_edges="sum")
+            sg.to_undirected(combine_edges=edge_collapse)
             for community_id, community in enumerate(sg.community_multilevel()):
                 nb_matches = sum(sg.es.select(_within=community)["weight"])
                 degrees = sg.vs.select(community).degree()
@@ -44,10 +44,14 @@ def yield_communities(g, algo="components"):
             raise ValueError("'algo' must be set to 'louvain' or 'components'")
 
 
-def generate_clusters(results_pattern, merged_meta_file, viz_data_file, nb_match_ransac, algo):
+def generate_clusters(results_pattern, merged_meta_file, viz_data_file, nb_match_ransac, algo, edge_collapse):
     logger.info("Loading query results")
 
-    g = ig.Graph.TupleList(generate_graph_from_files(results_pattern, nb_match_ransac), directed=True, weights=True)
+    g = ig.Graph.TupleList(
+        generate_graph_from_files(results_pattern, nb_match_ransac),
+        directed=True,
+        weights=True
+    )
 
     logger.info("Number of vertices in the graph: %d", g.vcount())
     logger.info("Number of edges in the graph: %d", g.ecount())
@@ -59,7 +63,7 @@ def generate_clusters(results_pattern, merged_meta_file, viz_data_file, nb_match
 
     with open(viz_data_file, "w") as f:
         writer = casanova.writer(f, ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"])
-        for nb_matches, community_id, node_ids, degrees in yield_communities(g, algo):
+        for nb_matches, community_id, node_ids, degrees in yield_communities(g, algo, edge_collapse):
             nb_points = []
             paths = []
 
