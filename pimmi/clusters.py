@@ -23,25 +23,31 @@ def generate_graph_from_files(file_patterns, min_nb_match_ransac):
                     yield int(row[query_image_id]), int(row[result_image_id]), int(row[nb_match_ransac])
 
 
+def metrics_from_subgraph(enum, sg):
+    return sum(sg.es["weight"]), enum, sg.vs["name"], sg.vs.degree()
+
+
 def yield_communities(g, algo="components", edge_collapse="mean"):
     comp = g.components(mode="weak")
     logger.info("Connected components in the graph: %d", len(comp))
     sub_graphs = comp.subgraphs()
 
+    community_counter = 0
     for component_id, sg in enumerate(sub_graphs):
         if algo == "components":
-            nb_matches = sum(sg.es["weight"])
-            yield nb_matches, component_id, sg.vs["name"], sg.vs.degree()
+            yield metrics_from_subgraph(component_id, sg)
 
         elif algo == "louvain":
             sg.to_undirected(combine_edges=edge_collapse)
-            for community_id, community in enumerate(sg.community_multilevel()):
-                nb_matches = sum(sg.es.select(_within=community)["weight"])
-                degrees = sg.vs.select(community).degree()
-                yield nb_matches, community_id, community, degrees
-
+            sub_sub_graphs = sg.community_multilevel().subgraphs()
+            for community_id, ssg in enumerate(sub_sub_graphs):
+                community_counter += 1
+                yield metrics_from_subgraph(community_id, ssg)
         else:
             raise ValueError("'algo' must be set to 'louvain' or 'components'")
+
+    if algo == "louvain":
+        logger.info("Louvain communities in the graph: %d", community_counter)
 
 
 def generate_clusters(results_pattern, merged_meta_file, viz_data_file, nb_match_ransac, algo, edge_collapse):
@@ -83,5 +89,13 @@ def generate_clusters(results_pattern, merged_meta_file, viz_data_file, nb_match
 if __name__ == '__main__':
     merged_meta_file = "index/dataset1.IVF1024,Flat.meta"
     results_pattern = "index/dataset1.IVF1024,Flat.mining_*"
-    viz_data_file = "index/dataset1.IVF1024,Flat.mining.clusters.json"
-    generate_clusters(results_pattern, merged_meta_file, viz_data_file, nb_match_ransac=10, algo="louvain")
+    viz_data_file = "index/dataset1.IVF1024,Flat.mining.clusters.csv"
+
+    generate_clusters(
+        results_pattern,
+        merged_meta_file,
+        viz_data_file,
+        nb_match_ransac=10,
+        algo="louvain",
+        edge_collapse="mean"
+    )
