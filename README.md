@@ -49,6 +49,17 @@ pip install -U pip
 pip install pimmi
 ```
 
+## Install from source
+```bash
+python3 -m venv /tmp/pimmi-env
+source /tmp/pimmi-env/bin/activate
+pip install -U pip
+git clone git@github.com:nrv/pimmi.git
+cd pimmi
+pip install -r requirements.txt 
+pip install -e .
+```
+
 ## Demo
 ```bash
 # --- Play with the demo dataset 1
@@ -71,6 +82,7 @@ pimmi create-config my_pimmi_conf.yml
 # previous data)
 pimmi fill --erase --force --config-path my_pimmi_conf.yml demo_dataset/dataset1 dataset1
 pimmi query --config-path my_pimmi_conf.yml demo_dataset/dataset1 dataset1
+pimmi clusters --config-path my_pimmi_conf.yml dataset1
 ```
 
 Happy hacking !
