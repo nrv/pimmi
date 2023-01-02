@@ -4,7 +4,6 @@ import logging
 import igraph as ig
 import casanova
 
-# TODO parameters from command line
 logger = logging.getLogger("gener")
 
 
