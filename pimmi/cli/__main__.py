@@ -15,6 +15,7 @@ import argparse
 import pimmi.toolbox as tbx
 import pimmi.pimmi_parameters as constants
 from pimmi.clusters import generate_clusters
+from pimmi.clusters import from_clusters_to_viz
 from pimmi.cli.config import parameters as prm
 from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
 
@@ -86,6 +87,12 @@ def load_cli_parameters():
     clusters_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
                                                               " create a config file template.")
     clusters_query.set_defaults(func=clusters)
+
+    # VIZ command
+    parser_viz = subparsers.add_parser('viz', help="Generate pimmi-ui viz data")
+    parser_viz.add_argument("--clusters", type=str, help="Input clusters CSV file")
+    parser_viz.add_argument("--viz", type=str, help="Output pimmi-ui viz JSON file")
+    parser_viz.set_defaults(func=viz)
 
     # CONFIG-PARAMS command
     parser_config_params = subparsers.add_parser('config-params',
@@ -213,6 +220,10 @@ def clusters(index_name, index_path, config_path, **kwargs):
         prm.algo,
         prm.edge_collapse
     )
+
+
+def viz(clusters, viz, **kwargs):
+    from_clusters_to_viz(clusters, viz)
 
 
 def make_index_path(index_path, index_name, index_type):
