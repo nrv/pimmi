@@ -5,7 +5,7 @@ import igraph as ig
 import casanova
 import json
 
-logger = logging.getLogger("cluster")
+logger = logging.getLogger("pimmi")
 
 
 def obj_dict(obj):

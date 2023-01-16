@@ -20,7 +20,7 @@ from pimmi.cli.config import parameters as prm
 from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("pimmi")
 parser = argparse.ArgumentParser(prog="pimmi", description='PIMMI: a command line tool for image mining.')
 config_path = os.path.join(os.path.dirname(__file__), "config.yml")
 config_dict = prm.load_config_file(config_path)
@@ -174,7 +174,7 @@ def fill(image_dir, index_name, index_path, config_path, erase=False, force=Fals
                     prm.sift_sigma, prm.nb_threads)
 
     if erase or not index_exists:
-        filled_index = create_index_mt(prm.index_type, images, image_dir, sift)
+        filled_index = create_index_mt(prm.index_type, images, image_dir, sift, verbose=not prm.silent)
     else:
         previous_index = load_index(faiss_index, faiss_meta)
         filled_index = fill_index_mt(previous_index, images, image_dir, sift)
@@ -306,6 +306,8 @@ def confirm(question):
 
 def main():
     cli_params = load_cli_parameters()
+    if cli_params["silent"]:
+        logger.setLevel(level=logging.ERROR)
     if "func" in cli_params:
         command = cli_params.pop("func")
         command(**cli_params)

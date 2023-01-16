@@ -6,7 +6,7 @@ from os.path import join
 import pimmi.pimmi_parameters as constants
 import logging
 
-logger = logging.getLogger("tools")
+logger = logging.getLogger("pimmi")
 
 ALLOWLIST_FORMATS = (".jpeg", ".jpg", ".png")
 

@@ -212,9 +212,9 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
     return index
 
 
-def create_index_mt(index_type, images, root_path, sift, only_empty_index=False):
+def create_index_mt(index_type, images, root_path, sift, only_empty_index=False, verbose=True):
     new_faiss = faiss.index_factory(128, index_type)
-    new_faiss.verbose = True
+    new_faiss.verbose = verbose
     index = {dff_internal_faiss: new_faiss, dff_internal_faiss_type: index_type,
              dff_internal_meta: dict(),
              # dff_internal_meta_df: None,
