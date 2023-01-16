@@ -18,6 +18,7 @@ setup(name='pimmi',
       packages=find_packages(exclude=["collect*", "dist", "build"]),
       include_package_data=True,
       install_requires=[
+        "fog",
         "numpy",
         "pandas",
         "faiss-cpu",

@@ -14,8 +14,8 @@ import argparse
 
 import pimmi.toolbox as tbx
 import pimmi.pimmi_parameters as constants
-from pimmi.clusters import generate_clusters
-from pimmi.clusters import from_clusters_to_viz
+from pimmi.clusters import generate_clusters, from_clusters_to_viz
+from pimmi.eval import evaluate
 from pimmi.cli.config import parameters as prm
 from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
 
@@ -93,6 +93,18 @@ def load_cli_parameters():
     parser_viz.add_argument("--clusters", type=str, help="Input clusters CSV file")
     parser_viz.add_argument("--viz", type=str, help="Output pimmi-ui viz JSON file")
     parser_viz.set_defaults(func=viz)
+
+    # EVAL command
+    parser_eval = subparsers.add_parser('eval', help="Evaluate quality of clusters")
+    parser_eval.add_argument("file", type=str, metavar="file")
+    parser_eval.add_argument("--predicted-column", type=str, default="predicted", help="Name of the column containing predicted clusters.")
+    parser_eval.add_argument("--truth-column", type=str, default="truth", help="Name of the column containing ground truth.")
+    parser_eval.add_argument("--query-column", type=str, help="If you want to compute average query precision, " \
+        "name of the column containing 'original' for each query image.")
+    parser_eval.add_argument("--ignore-missing", action="store_true", help="Ignore rows where no cluster has been predicted.")
+    parser_eval.add_argument("--csv", action="store_true", help="Format output as csv row.")
+
+    parser_eval.set_defaults(func=eval)
 
     # CONFIG-PARAMS command
     parser_config_params = subparsers.add_parser('config-params',
@@ -225,6 +237,17 @@ def clusters(index_name, index_path, config_path, **kwargs):
 def viz(clusters, viz, **kwargs):
     from_clusters_to_viz(clusters, viz)
 
+
+def eval(file, predicted_column, truth_column, query_column=None, ignore_missing=False, csv=False, **kwargs):
+    if os.path.exists(file):
+        metrics = evaluate(file, truth_column, predicted_column, status_column=query_column, include_missing_predictions= not ignore_missing)
+        if csv:
+            print(",".join(str(round(m, 3)) for m in metrics.values()))
+        else:
+            for metric, value in metrics.items():
+                print("{}: {}".format(metric, value))
+    else:
+        logger.error("{} file does not exist".format(file))
 
 def make_index_path(index_path, index_name, index_type):
     path = os.path.join(index_path, ".".join([index_name, index_type]))
