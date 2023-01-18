@@ -1,9 +1,11 @@
 import os
+import sys
 import glob
 import casanova
 
-path_to_images = "/var/www/html/pimmi-copydays/copydays/"
-path_to_clusters_file = "/var/www/html/pimmi-copydays/index/copydays.IVF1024,Flat.mining.clusters.csv"
+path_to_images = sys.argv[1]
+path_to_clusters_file = sys.argv[2]
+
 prefix = len(path_to_images.strip("/"))
 
 def create_row(cluster_dict, relative_path):
