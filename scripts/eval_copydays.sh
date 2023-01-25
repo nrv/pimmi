@@ -24,60 +24,76 @@ name,image_count,\
 sift_resize_image,sift_max_image_dimension,sift_nOctaveLayers,sift_contrastThreshold,sift_edgeThreshold,sift_sigma" > $FILE
 fi
 
-#Default sift_* config values. Might be tested later.
 SIFT_RESIZE_IMAGE=true
 SIFT_MAX_IMAGE_DIMENSION=512
-SIFT_LAYERS=1
-SIFT_CONTRAST=0.1
-SIFT_EDGE=10
-SIFT_SIGMA=1.6
 
 for INDEX_TYPE in IVF1024,Flat OPQ16_64,IVF65536_HNSW32,PQ16
 
 do  
 
-    for SIFT_NFEATURES in 100 200 1000 2000
+    for SIFT_NFEATURES in 100 1000
 
     do 
-        echo "********************Starting to fill index (Index type: $INDEX_TYPE , nfeatures: $SIFT_NFEATURES)"
-        TIME_FILL=$(/usr/bin/time -f %e,%U,%S pimmi --sift-nfeatures $SIFT_NFEATURES --index-type $INDEX_TYPE --silent true fill $IMAGES $INDEX_NAME --erase --force 2>&1)
 
-        for QUERY_SIFT_KNN in 10 20 100 200 1000
+        for SIFT_LAYERS in 2 3
 
-        do 
+        do
 
-            for QUERY_DIST in 0.2 0.4 0.6 0.8
+            for SIFT_EDGE in 5 100
 
-            do 
-                echo "********************Starting to query index (Nb knn: $QUERY_SIFT_KNN , query distance: $QUERY_DIST)"
-                TIME_QUERY=$(/usr/bin/time -f %e,%U,%S pimmi --query-sift-knn $QUERY_SIFT_KNN --query-dist-ratio-threshold $QUERY_DIST --index-type $INDEX_TYPE --silent true query $IMAGES $INDEX_NAME 2>&1)
-
-                for ALGO in components louvain
+            do
+                
+                for SIFT_CONTRAST in 0.08 0.12
 
                 do
-                    echo "********************Create clusters (Algo: $ALGO)"
-                    TIME_CLUSTERS=$(/usr/bin/time -f %e,%U,%S pimmi --index-type $INDEX_TYPE --algo $ALGO --silent true clusters $INDEX_NAME 2>&1 )
+                    for SIFT_SIGMA in 1.4 1.8
+                    do 
+                        echo "********************Starting to fill index (nfeatures: $SIFT_NFEATURES ; layers: $SIFT_LAYERS ; edge: $SIFT_EDGE ; contrast: $SIFT_CONTRAST ; sigma: $SIFT_SIGMA)"
+                        TIME_FILL=$(/usr/bin/time -f %e,%U,%S pimmi --sift-nOctaveLayers $SIFT_LAYERS --sift-contrastThreshold $SIFT_CONTRAST --sift-nfeatures $SIFT_NFEATURES --sift-edgeThreshold $SIFT_EDGE --sift-sigma $SIFT_SIGMA --index-type $INDEX_TYPE --silent true fill $IMAGES $INDEX_NAME --erase --force 2>&1)
 
-                    echo "********************Evaluate"
-                    python $PYTHON_SCRIPT $IMAGES index/$INDEX_NAME.$INDEX_TYPE.mining.clusters.csv
-                    METRICS=$(pimmi eval index/$INDEX_NAME.$INDEX_TYPE.mining.groundtruth.csv --query-column image_status --csv)
+                        for QUERY_SIFT_KNN in 100 200 1000 2000
 
-                    IMAGE_COUNT=`wc -l < index/$INDEX_NAME.$INDEX_TYPE.mining.groundtruth.csv`
+                        do 
 
-                    echo $METRICS
+                            for QUERY_DIST in 0.2 0.4 0.6 0.8
 
-                    echo "$TIME_FILL,$TIME_QUERY,$TIME_CLUSTERS,\"$INDEX_TYPE\",$SIFT_NFEATURES,$QUERY_SIFT_KNN,$QUERY_DIST,$ALGO,$METRICS,\
-                    $INDEX_NAME,$IMAGE_COUNT,$SIFT_RESIZE_IMAGE,$SIFT_MAX_IMAGE_DIMENSION,$SIFT_LAYERS,$SIFT_CONTRAST,$SIFT_EDGE,$SIFT_SIGMA" >> $FILE
-                    echo "********************"
-                    echo "********************"
+                            do 
+                                echo "********************Starting to query index (Nb knn: $QUERY_SIFT_KNN , query distance: $QUERY_DIST)"
+                                TIME_QUERY=$(/usr/bin/time -f %e,%U,%S pimmi --query-sift-knn $QUERY_SIFT_KNN --query-dist-ratio-threshold $QUERY_DIST --index-type $INDEX_TYPE --silent true query $IMAGES $INDEX_NAME 2>&1)
+
+                                for ALGO in components
+
+                                do
+                                    echo "********************Create clusters (Algo: $ALGO)"
+                                    TIME_CLUSTERS=$(/usr/bin/time -f %e,%U,%S pimmi --index-type $INDEX_TYPE --algo $ALGO --silent true clusters $INDEX_NAME 2>&1 )
+
+                                    echo "********************Evaluate"
+                                    python $PYTHON_SCRIPT $IMAGES index/$INDEX_NAME.$INDEX_TYPE.mining.clusters.csv
+                                    METRICS=$(pimmi eval index/$INDEX_NAME.$INDEX_TYPE.mining.groundtruth.csv --query-column image_status --csv)
+
+                                    IMAGE_COUNT=`wc -l < index/$INDEX_NAME.$INDEX_TYPE.mining.groundtruth.csv`
+
+                                    echo $METRICS
+
+                                    echo "$TIME_FILL,$TIME_QUERY,$TIME_CLUSTERS,\"$INDEX_TYPE\",$SIFT_NFEATURES,$QUERY_SIFT_KNN,$QUERY_DIST,$ALGO,$METRICS,\
+                                    $INDEX_NAME,$IMAGE_COUNT,$SIFT_RESIZE_IMAGE,$SIFT_MAX_IMAGE_DIMENSION,$SIFT_LAYERS,$SIFT_CONTRAST,$SIFT_EDGE,$SIFT_SIGMA" >> $FILE
+                                    echo "********************"
+                                    echo "********************"
+
+                                done
+
+                            done
+
+                        done
+
+                    done
 
                 done
 
             done
 
-        done
+        done  
 
     done
 
 done
-
