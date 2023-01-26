@@ -143,3 +143,6 @@ demo_dataset/dataset2/
 demo_dataset/images/
 demo_dataset/raw/
 
+scripts/index
+scripts/benchmark_copydays.csv
+

@@ -11,6 +11,7 @@ eval "$(pyenv init -)"
 eval "$(pyenv virtualenv-init -)"
 pyenv activate $VIRTUALENV
 
+mkdir -p index
 
 if [ ! -f "$FILE" ]; then
     echo "real_time_fill,user_time_fill,sys_time_fill,\

@@ -562,16 +562,19 @@ def query_index_mt(index, images, root_path, pack=-1):
     task_launched = 0
     for image in images:
         image_path = image[constants.dff_image_path]
-        rel_image_path = os.path.relpath(image_path, root_path)
-        task_queue.put(
-            {
-                constants.dff_image_path: image_path,
-                constants.dff_image_relative_path: rel_image_path,
-                constants.dff_query_id: image[constants.dff_image_id],
-                dff_internal_pack_id: pack
-            }
-        )
-        task_launched += 1
+        if os.path.isfile(image_path):
+            rel_image_path = os.path.relpath(image_path, root_path)
+            task_queue.put(
+                {
+                    constants.dff_image_path: image_path,
+                    constants.dff_image_relative_path: rel_image_path,
+                    constants.dff_query_id: image[constants.dff_image_id],
+                    dff_internal_pack_id: pack
+                }
+            )
+            task_launched += 1
+        else:
+            logger.warning("unable to find image, will not query it : " + image_path)
 
     all_result = ImageResultList()
     for i in range(task_launched):

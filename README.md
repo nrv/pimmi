@@ -85,6 +85,57 @@ pimmi query --config-path my_pimmi_conf.yml demo_dataset/dataset1 dataset1
 pimmi clusters --config-path my_pimmi_conf.yml dataset1
 ```
 
+## Test on the Copydays dataset
+You can find the dataset explanations [here](https://lear.inrialpes.fr/~jegou/data.php#copydays). Unfortunately, the data files are not available anymore, you can get them from [web archive](http://web.archive.org/web/20181015092553if_/http://pascal.inrialpes.fr/data/holidays/).
+
+Create a project structure and uncompress all the files in the same images directory.
+
+```
+copydays
+└───index
+└───images
+    └───crop
+    │   └───crops
+    │       └───10
+    │       └───15
+    │       └───20
+    │       └───30
+    │       └───40
+    │       └───50
+    │       └───60
+    │       └───70
+    │       └───80
+    └───original
+    └───jpeg
+    │   └───jpegqual
+    │       └───3
+    │       └───5
+    │       └───8
+    │       └───10
+    │       └───15
+    │       └───20
+    │       └───30
+    │       └───50
+    │       └───75
+    └───strong
+```
+
+You can then play with the different parameters and evaluate the results. If you want to loop over several parameters to optimize your settings, you may have a look at eval_copydays.sh. 
+```bash
+cd scripts
+mkdir index
+pimmi --sift-nfeatures 1000 --index-type IVF1024,Flat fill /path/to/copydays/images/ copydays
+pimmi --query-sift-knn 1000 --query-dist-ratio-threshold 0.8 --index-type IVF1024,Flat query /path/to/copydays/images/ copydays 
+pimmi --index-type IVF1024,Flat --algo components clusters copydays
+python copydays_groundtruth.py /path/to/copydays/images/ index/copydays.IVF1024,Flat.mining.clusters.csv
+pimmi eval index/copydays.IVF1024,Flat.mining.groundtruth.csv --query-column image_status
+```
+```
+cluster precision: 0.9924645454677958
+cluster recall: 0.7406974660159374
+cluster f1: 0.7856752626502786
+query average precision: 0.8459113427266295
+```
 Happy hacking !
 
 
