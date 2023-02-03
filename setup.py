@@ -4,7 +4,7 @@ with open('./README.md', 'r') as f:
     long_description = f.read()
 
 setup(name='pimmi',
-      version='0.1.1',
+      version='0.2.0',
       description='Python IMage MIning',
       long_description=long_description,
       long_description_content_type='text/markdown',
