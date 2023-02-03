@@ -108,7 +108,7 @@ def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match
     with open(merged_meta_file, 'rb') as f:
         meta_json = pickle.load(f)
 
-    f = open(outputfile, 'w') if clusters_file else sys.stdout
+    f = open(clusters_file, 'w') if clusters_file else sys.stdout
 
     writer = casanova.writer(f, ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"])
     for nb_matches, community_id, node_ids, degrees in yield_communities(g, algo, edge_collapse):
