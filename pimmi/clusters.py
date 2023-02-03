@@ -1,3 +1,4 @@
+import sys
 import glob
 import pickle
 import logging
@@ -90,7 +91,7 @@ def yield_communities(g, algo="components", edge_collapse="mean"):
         logger.info("Louvain communities in the graph: %d", community_counter)
 
 
-def generate_clusters(results_pattern, merged_meta_file, viz_data_file, nb_match_ransac, algo, edge_collapse):
+def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match_ransac, algo, edge_collapse):
     logger.info("Loading query results")
 
     g = ig.Graph.TupleList(
@@ -107,34 +108,37 @@ def generate_clusters(results_pattern, merged_meta_file, viz_data_file, nb_match
     with open(merged_meta_file, 'rb') as f:
         meta_json = pickle.load(f)
 
-    with open(viz_data_file, "w") as f:
-        writer = casanova.writer(f, ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"])
-        for nb_matches, community_id, node_ids, degrees in yield_communities(g, algo, edge_collapse):
-            nb_points = []
-            paths = []
+    f = open(outputfile, 'w') if clusters_file else sys.stdout
 
-            for node_id in node_ids:
-                meta_image = meta_json[node_id]
-                nb_points.append(meta_image["nb_points"])
-                paths.append(meta_image["path"])
+    writer = casanova.writer(f, ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"])
+    for nb_matches, community_id, node_ids, degrees in yield_communities(g, algo, edge_collapse):
+        nb_points = []
+        paths = []
 
-            sum_weight = range(len(nb_points), 0, -1)
-            max_theoretical_matches = 2 * sum([i * j for i, j in zip(sorted(nb_points), sum_weight)])
-            quality = nb_matches / max_theoretical_matches
+        for node_id in node_ids:
+            meta_image = meta_json[node_id]
+            nb_points.append(meta_image["nb_points"])
+            paths.append(meta_image["path"])
 
-            for node_id, nb, path, degree in zip(node_ids, nb_points, paths, degrees):
-                writer.writerow([path, node_id, nb, degree, community_id, quality])
+        sum_weight = range(len(nb_points), 0, -1)
+        max_theoretical_matches = 2 * sum([i * j for i, j in zip(sorted(nb_points), sum_weight)])
+        quality = nb_matches / max_theoretical_matches
+
+        for node_id, nb, path, degree in zip(node_ids, nb_points, paths, degrees):
+            writer.writerow([path, node_id, nb, degree, community_id, quality])
+            
+    f.close()
 
 
 if __name__ == '__main__':
     merged_meta_file = "index/dataset1.IVF1024,Flat.meta"
     results_pattern = "index/dataset1.IVF1024,Flat.mining_*"
-    viz_data_file = "index/dataset1.IVF1024,Flat.mining.clusters.csv"
+    clusters_file = "index/dataset1.IVF1024,Flat.mining.clusters.csv"
 
     generate_clusters(
         results_pattern,
         merged_meta_file,
-        viz_data_file,
+        clusters_file,
         nb_match_ransac=10,
         algo="louvain",
         edge_collapse="mean"
