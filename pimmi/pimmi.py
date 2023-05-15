@@ -6,6 +6,7 @@ import pickle
 import logging
 import csv
 import json
+from tqdm import tqdm
 from json import JSONEncoder
 import os.path
 from multiprocessing import Queue, Process
@@ -72,11 +73,6 @@ def extract_sift(file, image_id, sift, pack=-1):
             pfx = str(pack) + " :: " + str(image_id)
         else:
             pfx = str(image_id)
-        logger.info(
-            "~ [" + pfx + "] (" + str(prm.sift_nfeatures) + ", " + str(prm.sift_nOctaveLayers) + ", " +
-            str(prm.sift_contrastThreshold) + ", " + str(prm.sift_edgeThreshold) + ", " + str(prm.sift_sigma)
-            + ") extracting " + str(len(kp)) + " sift points for (" + str(w) + " x " +
-            str(h) + ", " + str(resized) + ") " + file)
     ids = None
     if image_id is not None:
         ids = np.empty(len(kp), dtype="int64")
@@ -142,7 +138,7 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
             constants.dff_image_id: index[dff_internal_id_generator]
         }
         task_queue.put({
-            constants.dff_image_path: image_path, 
+            constants.dff_image_path: image_path,
             constants.dff_image_id: index[dff_internal_id_generator]})
         index[dff_internal_id_generator] = index[dff_internal_id_generator] + 1
         task_launched += 1
@@ -154,7 +150,7 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
 
     all_ids = None
     all_features = None
-    for i in range(task_launched):
+    for i in tqdm(range(task_launched)):
         result = result_queue.get()
         image_id = result[constants.dff_image_id]
         ids = result[constants.dff_ids]
@@ -164,8 +160,6 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
             index[dff_internal_meta][image_id][constants.dff_height] = result[constants.dff_height]
             index[dff_internal_meta][image_id][constants.dff_nb_points] = len(ids)
             index[dff_internal_faiss_nb_images] = index[dff_internal_faiss_nb_images] + 1
-            if image_id % 100 == 0:
-                logger.info("~ [" + str(image_id) + "] result retrieved from queue : " + str(len(ids)))
             if all_features is None:
                 all_features = []
                 all_ids = []
@@ -464,8 +458,6 @@ def query_index_single_image(index, sift_query_ids, query_desc, query_width, que
                         knn_ids_filtered = np.concatenate((knn_ids_zero, knn_ids_nonzero))
                         if prm.query_adaptative_sift_knn and len(knn_ids_filtered) == len(knn_ids):
                             current_nn_is_enough = False
-                            logger.info("    . " + str(sift_query_id) + " reached knn (" + str(current_nn) + ") limit "
-                                        + str(knn_dist[-1]) + " / " + str(first_non_zero_dist))
                             break
                         else:
                             knn_ids = knn_ids_filtered
@@ -577,7 +569,7 @@ def query_index_mt(index, images, root_path, pack=-1):
             logger.warning("unable to find image, will not query it : " + image_path)
 
     all_result = ImageResultList()
-    for i in range(task_launched):
+    for i in tqdm(range(task_launched)):
         result = result_queue.get()
         query_result: ImageResultList = result
 

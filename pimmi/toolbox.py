@@ -76,5 +76,4 @@ class Sift(object):
         self.config = cv.SIFT_create(nfeatures=sift_nfeatures, nOctaveLayers=sift_nOctaveLayers,
                               contrastThreshold=sift_contrastThreshold, edgeThreshold=sift_edgeThreshold,
                               sigma=sift_sigma)
-        logger.info("Using opencv : " + cv.__version__)
         cv.setNumThreads(nb_threads)

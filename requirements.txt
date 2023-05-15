@@ -11,3 +11,4 @@ wheel
 pyyaml
 casanova
 fog
+tqdm
