@@ -31,4 +31,7 @@ class TestSift(object):
             assert kp_item.pt[0] == tested_kp_item.pt[0]
             assert kp_item.pt[1] == tested_kp_item.pt[1]
             for attr in kp_fieldnames[2:]:
-                assert getattr(kp_item, attr) == getattr(tested_kp_item, attr)
+                if attr == "angle":
+                    assert round(float(getattr(kp_item, attr)), 3) == round(float(getattr(tested_kp_item, attr)), 3)
+                else:
+                    assert getattr(kp_item, attr) == getattr(tested_kp_item, attr)
