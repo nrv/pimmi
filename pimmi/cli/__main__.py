@@ -123,7 +123,7 @@ def load_cli_parameters():
     return cli_parameters
 
 
-def fill(image_dir, index_name, index_path, config_path, erase=False, force=False, **kwargs):
+def fill(image_dir, index_name, index_path, erase=False, force=False, **kwargs):
     if not os.path.isdir(image_dir):
         logger.error("The provided image-dir is not a directory.")
         sys.exit(1)
@@ -181,7 +181,7 @@ def fill(image_dir, index_name, index_path, config_path, erase=False, force=Fals
     save_index(filled_index, faiss_index, faiss_meta)
 
 
-def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, **kwargs):
+def query(index_name, image_dir, index_path, nb_per_split, simple, **kwargs):
 
     faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
 
@@ -216,7 +216,7 @@ def query(index_name, image_dir, index_path, config_path, nb_per_split, simple, 
             query_result.to_csv(pack_result_file)
 
 
-def clusters(index_name, index_path, config_path, output, **kwargs):
+def clusters(index_name, index_path, output, **kwargs):
     faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
     mining_files = faiss_index.replace("faiss", "mining")
     mining_files_pattern = mining_files + "_*"
@@ -305,7 +305,8 @@ def main():
     if cli_params["silent"]:
         logger.setLevel(level=logging.ERROR)
     if "func" in cli_params:
-        check_custom_config(cli_params.get("config_path"))
+        config_path = cli_params.pop("config_path")
+        check_custom_config(config_path)
 
         command = cli_params.pop("func")
         command(**cli_params)
