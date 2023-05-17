@@ -62,6 +62,7 @@ def load_cli_parameters():
                                                                         "exists.")
     parser_fill.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to "
                                                              "create a config file template.")
+    parser_fill.add_argument("-n", "--nb-img", type=int, help="Use only the first n images in `image_dir`")
     parser_fill.set_defaults(func=fill)
 
     # QUERY command
@@ -77,6 +78,7 @@ def load_cli_parameters():
     parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
                                                               " create a config file template.")
     parser_query.add_argument("--simple", action="store_true", default=False)
+    parser_query.add_argument("-n", "--nb-img", type=int, help="Query only the first n images in `image_dir`")
     parser_query.set_defaults(func=query)
 
     # CLUSTERS command
@@ -123,7 +125,7 @@ def load_cli_parameters():
     return cli_parameters
 
 
-def fill(image_dir, index_name, index_path, erase=False, force=False, **kwargs):
+def fill(image_dir, index_name, index_path, nb_img, erase=False, force=False, **kwargs):
     if not os.path.isdir(image_dir):
         logger.error("The provided image-dir is not a directory.")
         sys.exit(1)
@@ -167,7 +169,7 @@ def fill(image_dir, index_name, index_path, erase=False, force=False, **kwargs):
         index_name = os.path.basename(os.path.normpath(image_dir))
 
     logger.info("listing images recursively from : " + image_dir)
-    images = tbx.get_all_images(image_dir)
+    images = tbx.get_all_images(image_dir, nb_img)
 
     sift = tbx.Sift(prm.sift_nfeatures, prm.sift_nOctaveLayers, prm.sift_contrastThreshold, prm.sift_edgeThreshold,
                     prm.sift_sigma, prm.nb_threads)
@@ -181,17 +183,13 @@ def fill(image_dir, index_name, index_path, erase=False, force=False, **kwargs):
     save_index(filled_index, faiss_index, faiss_meta)
 
 
-def query(index_name, image_dir, index_path, nb_per_split, simple, **kwargs):
+def query(index_name, image_dir, index_path, nb_per_split, simple, nb_img, **kwargs):
 
     faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
 
     index = load_index(faiss_index, faiss_meta)
 
-    images = get_index_images(index, image_dir)
-
-    nb_img = kwargs.get("nb_img")
-    if nb_img:
-        images = images.head(nb_img)
+    images = get_index_images(index, image_dir, nb_img)
 
     if simple:
         prm.query_dist_filter = False

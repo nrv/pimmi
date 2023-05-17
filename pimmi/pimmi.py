@@ -266,11 +266,15 @@ def load_index(faiss_file, meta_file, correct=None, only_meta=False):
     return index
 
 
-def get_index_images(index, path_prefix):
-    # TODO simplify these 3 lines !
-    all_path = [path_prefix + "/" + image[constants.dff_image_path] for image in index[dff_internal_meta].values()]
-    all_image_ids = [image[constants.dff_image_id] for image in index[dff_internal_meta].values()]
-    all_images = [{constants.dff_image_path: p, constants.dff_image_id: i} for p, i in zip(all_path, all_image_ids)]
+def get_index_images(index, path_prefix, nb_img=None):
+
+    all_images = []
+    for image in index[dff_internal_meta].values():
+        image_path = os.path.join(path_prefix, image[constants.dff_image_path])
+        image_id = image[constants.dff_image_id]
+        all_images.append({constants.dff_image_path: image_path, constants.dff_image_id: image_id})
+        if nb_img and len(all_images) >= nb_img:
+            return all_images
 
     logger.info("found " + str(len(all_images)) + " images in index")
     return all_images

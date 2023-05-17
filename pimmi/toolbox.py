@@ -1,21 +1,28 @@
-import glob
+import os
+import re
 import json
 import math
 import cv2 as cv
-from os.path import join
 import pimmi.pimmi_parameters as constants
 import logging
 
 logger = logging.getLogger("pimmi")
 
-ALLOWLIST_FORMATS = (".jpeg", ".jpg", ".png")
+ALLOWED_FORMATS = ("jpeg", "jpg", "png")
+ALLOWED_FORMATS_PATTERN = r".*\.({})$".format("|".join(ALLOWED_FORMATS))
 
 
-def get_all_images(image_dir):
-    files = []
-    for extension in ALLOWLIST_FORMATS:
-        files.extend(glob.glob(join(image_dir, "**", "*{}".format(extension)), recursive=True))
-    return files
+def get_all_images(image_dir, nb_img=None):
+
+    image_files = []
+    for root, dirs, files in os.walk(image_dir):
+        for f in files:
+            if re.search(ALLOWED_FORMATS_PATTERN, f):
+                image_files.append(os.path.join(root, f))
+                if nb_img and len(image_files) >= nb_img:
+                    return image_files
+
+    return image_files
 
 
 def parse_mex(file):
