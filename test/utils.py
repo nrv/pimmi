@@ -8,7 +8,7 @@ from pimmi.cli.config import parameters as prm
 
 
 SMALL_DATASET_DIR = join(dirname(dirname(__file__)), 'demo_dataset', 'small_dataset')
-IMAGE_PATH = join(SMALL_DATASET_DIR, "000010.jpg")
+IMAGE_PATH = join(SMALL_DATASET_DIR, "1", "000010.jpg")
 EXAMPLE_IMAGE_FILE = join(dirname(__file__), "ressources", "image_000010_sifts.csv")
 IMAGE_ID = 0
 

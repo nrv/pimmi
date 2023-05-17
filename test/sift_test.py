@@ -6,9 +6,7 @@ from os.path import join, dirname
 
 from pimmi.pimmi import extract_sift
 from pimmi.toolbox import Sift
-from test.utils import load_sifts_from_file, EXAMPLE_IMAGE_FILE, SMALL_DATASET_DIR, kp_fieldnames, prm
-
-IMAGE_PATH = join(SMALL_DATASET_DIR, "000010.jpg")
+from test.utils import load_sifts_from_file, EXAMPLE_IMAGE_FILE, IMAGE_PATH, kp_fieldnames, prm
 
 IMAGE_WIDTH = 512
 IMAGE_HEIGHT = 341
