@@ -3,6 +3,7 @@ import timeit
 import igraph as ig
 import pandas as pd
 import networkx as nx
+import networkit as nk
 import leidenalg as la
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -35,6 +36,13 @@ def leidenalg_modularity(H):
     return partition
 
 
+def networkit_louvain(G):
+    algo = nk.community.PLM(G, refine=True, turbo=False)
+    algo.run()
+    partition = algo.getPartition()
+    return partition
+
+
 def print_igraph_partition(partition):
     for c in partition:
         community = []
@@ -50,10 +58,11 @@ if __name__ == '__main__':
         edges = G.number_of_edges()
         nx.write_gml(G, "planted_partition.gml", stringizer=str)
         H = ig.load("planted_partition.gml")
+        I = nk.readGraph("planted_partition.gml", nk.Format.GML)
 
         for implementation, graph in zip(
-                ["networkx_louvain", "taynaud_louvain", "leidenalg_modularity", "igraph_louvain"],
-                ["G", "G", "H", "H"]
+                ["networkx_louvain", "taynaud_louvain", "leidenalg_modularity", "igraph_louvain", "networkit_louvain"],
+                ["G", "G", "H", "H", "I"]
         ):
             def append_results(number, time_taken):
                 results.append(

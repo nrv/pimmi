@@ -1,3 +1,6 @@
-python-louvain
-leidenalg
-seaborn
+cmake==3.26.3
+cpython==0.0.6
+leidenalg==0.9.1
+networkit==10.1
+python-louvain==0.16
+seaborn==0.12.2
