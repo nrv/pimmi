@@ -77,6 +77,6 @@ if __name__ == '__main__':
             for i in range(3):
                 t.autorange(callback=append_results)
     pd.DataFrame(results).to_csv("louvain_results.csv")
-    ax = sns.barplot(x="nodes", y="time", hue="version", ci="sd", data=pd.DataFrame(results))
+    ax = sns.barplot(x="nodes", y="time", hue="version", errorbar="sd", data=pd.DataFrame(results))
     ax.set_yscale("log")
     plt.savefig("louvain_results.jpg")
