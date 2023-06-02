@@ -303,7 +303,7 @@ def main():
     if cli_params["silent"]:
         logger.setLevel(level=logging.ERROR)
     if "func" in cli_params:
-        config_path = cli_params.pop("config_path")
+        config_path = cli_params.pop("config_path", None)
         check_custom_config(config_path)
 
         command = cli_params.pop("func")
