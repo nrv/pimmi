@@ -25,7 +25,6 @@ setup(name='pimmi',
         "faiss-cpu",
         "click",
         "matplotlib",
-        "python-igraph",
         "opencv-python",
         "pyyaml",
         "casanova"
