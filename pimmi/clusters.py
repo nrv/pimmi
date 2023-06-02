@@ -5,6 +5,7 @@ import logging
 import networkx as nx
 import casanova
 import json
+import networkx.algorithms.community as nx_community
 
 logger = logging.getLogger("pimmi")
 
@@ -68,8 +69,11 @@ def metrics_from_subgraph(enum, sg):
     return sum(w for u, v, w in sg.edges.data("weight")), enum, sg.degree()
 
 
-def yield_communities(g, algo="components", edge_collapse="mean"):
-    comp = nx.weakly_connected_components(g)
+def yield_communities(g, algo="components"):
+    if algo == "components":
+        comp = nx.weakly_connected_components(g)
+    else:
+        comp = nx.connected_components(g)
 
     community_counter = 0
     for component_id, component in enumerate(comp):
@@ -79,11 +83,10 @@ def yield_communities(g, algo="components", edge_collapse="mean"):
             yield metrics_from_subgraph(component_id, sg)
 
         elif algo == "louvain":
-            sg.to_undirected(combine_edges=edge_collapse)
-            sub_sub_graphs = sg.community_multilevel().subgraphs()
-            for community_id, ssg in enumerate(sub_sub_graphs):
+            communities =  nx_community.louvain_communities(sg)
+            for community in communities:
                 community_counter += 1
-                yield metrics_from_subgraph(community_id, ssg)
+                yield metrics_from_subgraph(community_counter, sg.subgraph(community))
 
     logger.info("Connected components in the graph: %d", component_id + 1)
 
@@ -91,7 +94,7 @@ def yield_communities(g, algo="components", edge_collapse="mean"):
         logger.info("Louvain communities in the graph: %d", community_counter)
 
 
-def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match_ransac, algo, edge_collapse):
+def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match_ransac, algo):
     logger.info("Loading query results")
 
     if algo == "louvain":
@@ -118,7 +121,7 @@ def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match
     f = open(clusters_file, 'w') if clusters_file else sys.stdout
 
     writer = casanova.writer(f, ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"])
-    for nb_matches, community_id, node_degrees in yield_communities(g, algo, edge_collapse):
+    for nb_matches, community_id, node_degrees in yield_communities(g, algo):
         nb_points = []
         paths = []
 

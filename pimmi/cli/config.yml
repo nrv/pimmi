@@ -40,7 +40,7 @@ sift_nfeatures:
 
 sift_nOctaveLayers:
   value: 1
-  help: "OpenCV parameter : the number of layers in each octave. 3 is the value used in D. Lowe paper. 
+  help: "OpenCV parameter : the number of layers in each octave. 3 is the value used in D. Lowe paper.
   The number of octaves is computed automatically from the image resolution.
   See https://docs.opencv.org/3.4/d7/d60/classcv_1_1SIFT.html.
   Defaults to 1 in Pimmi."
@@ -54,7 +54,7 @@ sift_contrastThreshold:
 
 sift_edgeThreshold:
   value: 10
-  help: "OpenCV parameter : the threshold used to filter out edge-like features. Note that its meaning is different from 
+  help: "OpenCV parameter : the threshold used to filter out edge-like features. Note that its meaning is different from
   the contrastThreshold, i.e. the larger the edgeThreshold, the less features are filtered out
   (more features are retained).
   See https://docs.opencv.org/3.4/d7/d60/classcv_1_1SIFT.html.
@@ -63,7 +63,7 @@ sift_edgeThreshold:
 sift_sigma:
   value: 1.6
   help: "OpenCV parameter : the sigma of the Gaussian applied to the input image at the octave #0. If your image
-  is captured with a weak camera with soft lenses, you might want to reduce the number. 
+  is captured with a weak camera with soft lenses, you might want to reduce the number.
   See https://docs.opencv.org/3.4/d7/d60/classcv_1_1SIFT.html.
   Defaults to 1.6 in Pimmi."
 
@@ -72,7 +72,7 @@ sift_sigma:
 # Part 2.1 - FAISS index creation
 index_type:
   value: "IVF1024,Flat"
-  help: "Faiss index type. See all possible values at 
+  help: "Faiss index type. See all possible values at
   https://github.com/facebookresearch/faiss/wiki/Lower-memory-footprint#simplifying-index-construction.
   Defaults to 'IVF1024,Flat', for huge database, you may consider 'OPQ16_64,IVF65536_HNSW32,PQ16'."
 
@@ -161,11 +161,5 @@ nb_match_ransac:
 algo:
   value: "components"
   help: "Method used to detect communities in the image similarity graph. Use 'components' for connected components,
-  and 'louvain' for multi-level modularity optimization (Blondel, V. D., Guillaume, J.-L., Lambiotte, R., & 
+  and 'louvain' for multi-level modularity optimization (Blondel, V. D., Guillaume, J.-L., Lambiotte, R., &
   Lefebvre, E. (2008))"
-
-edge_collapse:
-  value: "mean"
-  help: "If the chosen algo is 'louvain', method used to combine the edges of the image similarity graph when 
-  it is transformed into an undirected graph. Available values: 'mean', 'min', 'max', 'first', 'last', 'sum'."
-
