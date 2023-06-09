@@ -20,13 +20,15 @@ setup(name='pimmi',
       install_requires=[
         "tqdm",
         "fog",
+        "networkx>=2.7,<3",
         "numpy",
         "pandas",
         "faiss-cpu",
         "matplotlib",
         "opencv-python",
         "pyyaml",
-        "casanova"
+        "casanova",
+        "pelote"
       ],
       entry_points={
         'console_scripts': [

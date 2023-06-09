@@ -70,23 +70,33 @@ def metrics_from_subgraph(enum, sg):
 
 
 def yield_communities(g, algo="components"):
-    if algo == "components":
-        comp = nx.weakly_connected_components(g)
+
+    if g.is_directed():
+        components = nx.weakly_connected_components
     else:
-        comp = nx.connected_components(g)
+        components = nx.connected_components
+
+    if algo == "louvain":
+        largest_cc = max(components(g), key=len)
 
     community_counter = 0
-    for component_id, component in enumerate(comp):
+    for component_id, component in enumerate(components(g)):
 
         sg = g.subgraph(component)
         if algo == "components":
             yield metrics_from_subgraph(component_id, sg)
 
         elif algo == "louvain":
-            communities =  nx_community.louvain_communities(sg)
-            for community in communities:
+            if component == largest_cc:
+                undirected_sg = sg.to_undirected()
+                communities =  nx_community.louvain_communities(undirected_sg)
+                for community in communities:
+                    community_counter += 1
+                    yield metrics_from_subgraph(community_counter, undirected_sg.subgraph(community))
+            else:
                 community_counter += 1
-                yield metrics_from_subgraph(community_counter, sg.subgraph(community))
+                yield metrics_from_subgraph(community_counter, sg)
+
 
     logger.info("Connected components in the graph: %d", component_id + 1)
 
