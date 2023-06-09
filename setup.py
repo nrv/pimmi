@@ -18,17 +18,13 @@ setup(name='pimmi',
       packages=find_packages(exclude=["collect*", "dist", "build"]),
       include_package_data=True,
       install_requires=[
-        "tqdm",
+        "casanova",
+        "faiss-cpu",
         "fog",
         "networkx>=2.7,<3",
-        "numpy",
-        "pandas",
-        "faiss-cpu",
-        "matplotlib",
         "opencv-python",
         "pyyaml",
-        "casanova",
-        "pelote"
+        "tqdm",
       ],
       entry_points={
         'console_scripts': [

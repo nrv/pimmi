@@ -2,7 +2,6 @@
 # Pimmi Functional Tests
 # =============================================================================
 import csv
-import json
 from glob import glob
 from collections import defaultdict
 from os import remove

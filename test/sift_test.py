@@ -2,7 +2,6 @@
 # Pimmi SIFT Points Unit Tests
 # =============================================================================
 import numpy as np
-from os.path import join, dirname
 
 from pimmi.pimmi import extract_sift
 from pimmi.toolbox import Sift

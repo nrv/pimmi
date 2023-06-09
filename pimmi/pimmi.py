@@ -5,7 +5,6 @@ import faiss
 import pickle
 import logging
 import csv
-import json
 from tqdm import tqdm
 from json import JSONEncoder
 import os.path

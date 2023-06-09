@@ -1,13 +1,16 @@
-click
-numpy
-pandas
+# Dependencies
+casanova
 faiss-cpu
-matplotlib
+fog
+networkx>=2.7,<3
 opencv-python
-pytest
+pyyaml
+tqdm
+
+# Dev dependencies
+importchecker==2.0
+pytest==7.3.1
+
+# Build dependencies
 twine
 wheel
-pyyaml
-casanova
-fog
-tqdm
