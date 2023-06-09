@@ -23,11 +23,12 @@ class TestSift(object):
         tested_ids, tested_kp, tested_desc, tested_width, tested_height = extract_sift(IMAGE_PATH, 0, sift)
 
         assert desc.shape == tested_desc.shape
-        for row in zip(
+        for i, row in enumerate(zip(
             desc[desc[:, 0].argsort()],
             tested_desc[tested_desc[:, 0].argsort()]
-        ):
-            assert np.array_equal(row[0], row[1]), "desc: {} - tested_desc {}".format(row[0][:5], row[1][:5])
+        )):
+            for j, column in enumerate(zip(row[0], row[1])):
+                assert column[0] == column[1], "desc: {} - tested_desc: {} - position: ({}, {})".format(column[0], column[1], i, j)
         assert np.array_equal(ids, tested_ids)
         assert IMAGE_HEIGHT == tested_height
         assert IMAGE_WIDTH == tested_width
