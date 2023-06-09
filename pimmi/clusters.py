@@ -2,9 +2,10 @@ import sys
 import glob
 import pickle
 import logging
-import igraph as ig
+import networkx as nx
 import casanova
 import json
+import networkx.algorithms.community as nx_community
 
 logger = logging.getLogger("pimmi")
 
@@ -65,45 +66,64 @@ def generate_graph_from_files(file_patterns, min_nb_match_ransac):
 
 
 def metrics_from_subgraph(enum, sg):
-    return sum(sg.es["weight"]), enum, sg.vs["name"], sg.vs.degree()
+    return sum(w for u, v, w in sg.edges.data("weight")), enum, sg.degree()
 
 
-def yield_communities(g, algo="components", edge_collapse="mean"):
-    comp = g.components(mode="weak")
-    logger.info("Connected components in the graph: %d", len(comp))
-    sub_graphs = comp.subgraphs()
+def yield_communities(g, algo="components"):
+
+    if g.is_directed():
+        components = nx.weakly_connected_components
+    else:
+        components = nx.connected_components
+
+    if algo == "louvain":
+        largest_cc = max(components(g), key=len)
 
     community_counter = 0
-    for component_id, sg in enumerate(sub_graphs):
+    for component_id, component in enumerate(components(g)):
+
+        sg = g.subgraph(component)
         if algo == "components":
             yield metrics_from_subgraph(component_id, sg)
 
         elif algo == "louvain":
-            sg.to_undirected(combine_edges=edge_collapse)
-            sub_sub_graphs = sg.community_multilevel().subgraphs()
-            for community_id, ssg in enumerate(sub_sub_graphs):
+            if component == largest_cc:
+                undirected_sg = sg.to_undirected()
+                communities =  nx_community.louvain_communities(undirected_sg)
+                for community in communities:
+                    community_counter += 1
+                    yield metrics_from_subgraph(community_counter, undirected_sg.subgraph(community))
+            else:
                 community_counter += 1
-                yield metrics_from_subgraph(community_id, ssg)
-        else:
-            raise ValueError("'algo' must be set to 'louvain' or 'components'")
+                yield metrics_from_subgraph(community_counter, sg)
+
+
+    logger.info("Connected components in the graph: %d", component_id + 1)
 
     if algo == "louvain":
         logger.info("Louvain communities in the graph: %d", community_counter)
 
 
-def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match_ransac, algo, edge_collapse):
+def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match_ransac, algo):
     logger.info("Loading query results")
 
-    g = ig.Graph.TupleList(
-        generate_graph_from_files(results_pattern, nb_match_ransac),
-        directed=True,
-        weights=True
-    )
+    if algo == "louvain":
+        g = nx.Graph()
+        for u, v, weight in generate_graph_from_files(results_pattern, nb_match_ransac):
+            if g.has_edge(u, v):
+                g[u][v]["weight"] += weight
+            else:
+                g.add_edge(u, v, weight=weight)
 
-    logger.info("Number of vertices in the graph: %d", g.vcount())
-    logger.info("Number of edges in the graph: %d", g.ecount())
-    logger.info("Is the graph directed: %d", g.is_directed())
-    logger.info("Maximum degree in the graph: %d", g.maxdegree())
+    elif algo == "components":
+        g = nx.DiGraph()
+        for u, v, weight in generate_graph_from_files(results_pattern, nb_match_ransac):
+            g.add_edge(u, v, weight=weight)
+
+    else:
+        raise ValueError("'algo' must be set to 'louvain' or 'components'")
+
+    logger.info("Graph contains {} nodes and {} edges".format(len(g), g.size()))
 
     with open(merged_meta_file, 'rb') as f:
         meta_json = pickle.load(f)
@@ -111,11 +131,11 @@ def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match
     f = open(clusters_file, 'w') if clusters_file else sys.stdout
 
     writer = casanova.writer(f, ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"])
-    for nb_matches, community_id, node_ids, degrees in yield_communities(g, algo, edge_collapse):
+    for nb_matches, community_id, node_degrees in yield_communities(g, algo):
         nb_points = []
         paths = []
 
-        for node_id in node_ids:
+        for node_id, _ in node_degrees:
             meta_image = meta_json[node_id]
             nb_points.append(meta_image["nb_points"])
             paths.append(meta_image["path"])
@@ -124,9 +144,10 @@ def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match
         max_theoretical_matches = 2 * sum([i * j for i, j in zip(sorted(nb_points), sum_weight)])
         quality = nb_matches / max_theoretical_matches
 
-        for node_id, nb, path, degree in zip(node_ids, nb_points, paths, degrees):
+        for node_degree, nb, path in zip(node_degrees, nb_points, paths):
+            node_id, degree = node_degree
             writer.writerow([path, node_id, nb, degree, community_id, quality])
-            
+
     f.close()
 
 

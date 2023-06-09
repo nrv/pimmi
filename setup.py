@@ -13,22 +13,22 @@ setup(name='pimmi',
       author='Nicolas Hervé',
       author_email='',
       keywords='image mining',
-      python_requires='>=3.5,<3.9',
+      python_requires='>=3.8,<3.9',
       package_data={'pimmi': ['cli/config.yml']},
       packages=find_packages(exclude=["collect*", "dist", "build"]),
       include_package_data=True,
       install_requires=[
         "tqdm",
         "fog",
+        "networkx>=2.7,<3",
         "numpy",
         "pandas",
         "faiss-cpu",
-        "click",
         "matplotlib",
-        "python-igraph",
         "opencv-python",
         "pyyaml",
-        "casanova"
+        "casanova",
+        "pelote"
       ],
       entry_points={
         'console_scripts': [

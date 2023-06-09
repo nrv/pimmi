@@ -88,6 +88,8 @@ def load_cli_parameters():
                                                              "Defaults to './index'", default="./index")
     clusters_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
                                                               " create a config file template.")
+    clusters_query.add_argument("--algo", type=str, default='components',
+                                help="'components' or 'louvain'. Defaults to 'components'")
     clusters_query.add_argument("-o", "--output", type=str, help="Path to output file. If not provided, print to stdout.")
     clusters_query.set_defaults(func=clusters)
 
@@ -214,7 +216,7 @@ def query(index_name, image_dir, index_path, nb_per_split, simple, nb_img, **kwa
             query_result.to_csv(pack_result_file)
 
 
-def clusters(index_name, index_path, output, **kwargs):
+def clusters(index_name, index_path, output, algo, **kwargs):
     faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
     mining_files = faiss_index.replace("faiss", "mining")
     mining_files_pattern = mining_files + "_*"
@@ -223,8 +225,7 @@ def clusters(index_name, index_path, output, **kwargs):
         faiss_meta,
         output,
         prm.nb_match_ransac,
-        prm.algo,
-        prm.edge_collapse
+        algo,
     )
 
 
