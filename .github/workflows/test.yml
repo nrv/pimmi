@@ -13,7 +13,7 @@ jobs:
             python-version: "3.8"
 
           # Mac
-          - os: macos-10.15
+          - os: macos-11
             python-version: "3.8"
 
           # Windows

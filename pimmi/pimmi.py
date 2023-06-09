@@ -8,7 +8,7 @@ import csv
 from tqdm import tqdm
 from json import JSONEncoder
 import os.path
-from multiprocessing import Queue, Process
+from multiprocessing import Queue, Process, set_start_method
 
 from typing import List
 from itertools import groupby
@@ -34,6 +34,8 @@ dff_internal_faiss_type = "faiss_type"
 dff_internal_faiss_nb_images = "faiss_nb_images"
 dff_internal_faiss_nb_features = "faiss_nb_features"
 
+# Configure multiprocessing
+set_start_method('fork')
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(name)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("pimmi")
