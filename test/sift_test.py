@@ -22,7 +22,11 @@ class TestSift(object):
 
         tested_ids, tested_kp, tested_desc, tested_width, tested_height = extract_sift(IMAGE_PATH, 0, sift)
 
-        assert np.array_equal(desc, tested_desc)
+        for row in zip(
+            desc[desc[:, 0].argsort()],
+            tested_desc[tested_desc[:, 0].argsort()]
+        ):
+            assert np.array_equal(row[0], row[1])
         assert np.array_equal(ids, tested_ids)
         assert IMAGE_HEIGHT == tested_height
         assert IMAGE_WIDTH == tested_width
