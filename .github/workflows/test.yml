@@ -1,0 +1,38 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    strategy:
+      matrix:
+        include:
+
+          # Current ubuntu
+          - os: ubuntu-latest
+            python-version: "3.8"
+
+          # Mac
+          - os: macos-10.15
+            python-version: "3.8"
+
+          # Windows
+          - os: windows-latest
+            python-version: "3.8"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          make deps
+
+      - name: Run linter & unit tests
+        run: make

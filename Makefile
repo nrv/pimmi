@@ -16,6 +16,8 @@ define functional
 endef
 
 # Commands
+all: lint test
+
 publish: clean upload
 	$(call clean)
 
@@ -28,8 +30,9 @@ functional:
 	$(call functional)
 
 deps:
-	pip3 install -U pip
+	pip3 install -U pip setuptools
 	pip3 install -r requirements.txt
+	pip3 install .
 
 upload:
 	python setup.py sdist bdist_wheel
