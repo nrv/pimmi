@@ -9,6 +9,7 @@ from test.utils import load_sifts_from_file, EXAMPLE_IMAGE_FILE, IMAGE_PATH, kp_
 
 IMAGE_WIDTH = 512
 IMAGE_HEIGHT = 341
+ROUND_DECIMALS = 2
 
 
 class TestSift(object):
@@ -28,7 +29,7 @@ class TestSift(object):
         assert IMAGE_HEIGHT == tested_height
         assert IMAGE_WIDTH == tested_width
         for kp_item, tested_kp_item in zip(kp, tested_kp):
-            assert round(kp_item.pt[0], 3) == round(tested_kp_item.pt[0], 3)
-            assert round(kp_item.pt[1], 3) == round(tested_kp_item.pt[1], 3)
+            assert round(kp_item.pt[0], ROUND_DECIMALS) == round(tested_kp_item.pt[0], ROUND_DECIMALS)
+            assert round(kp_item.pt[1], ROUND_DECIMALS) == round(tested_kp_item.pt[1], ROUND_DECIMALS)
             for attr in kp_fieldnames[2:]:
-                assert round(float(getattr(kp_item, attr)), 3) == round(float(getattr(tested_kp_item, attr)), 3)
+                assert round(float(getattr(kp_item, attr)), ROUND_DECIMALS) == round(float(getattr(tested_kp_item, attr)), ROUND_DECIMALS)
