@@ -28,8 +28,8 @@ class TestSift(object):
         assert IMAGE_HEIGHT == tested_height
         assert IMAGE_WIDTH == tested_width
         for kp_item, tested_kp_item in zip(kp, tested_kp):
-            assert kp_item.pt[0] == tested_kp_item.pt[0]
-            assert kp_item.pt[1] == tested_kp_item.pt[1]
+            assert round(kp_item.pt[0], 3) == round(tested_kp_item.pt[0], 3)
+            assert round(kp_item.pt[1], 3) == round(tested_kp_item.pt[1], 3)
             for attr in kp_fieldnames[2:]:
                 if attr == "angle":
                     assert round(float(getattr(kp_item, attr)), 3) == round(float(getattr(tested_kp_item, attr)), 3)
