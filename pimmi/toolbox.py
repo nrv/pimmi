@@ -2,6 +2,7 @@ import os
 import re
 import json
 import math
+import random
 import cv2 as cv
 import pimmi.pimmi_parameters as constants
 import logging
@@ -22,6 +23,7 @@ def get_all_images(image_dir, nb_img=None):
                 if nb_img and len(image_files) >= nb_img:
                     return image_files
 
+    random.shuffle(image_files)
     return image_files
 
 
