@@ -94,9 +94,9 @@ def load_cli_parameters():
     clusters_query.set_defaults(func=clusters)
 
     # VIZ command
-    parser_viz = subparsers.add_parser('viz', help="Generate pimmi-ui viz data")
-    parser_viz.add_argument("--clusters", type=str, help="Input clusters CSV file")
-    parser_viz.add_argument("--viz", type=str, help="Output pimmi-ui viz JSON file")
+    parser_viz = subparsers.add_parser('viz', help="Receive a CSV file containing the clusters and the name of the output .json file.")
+    parser_viz.add_argument('clusters')
+    parser_viz.add_argument('viz')
     parser_viz.set_defaults(func=viz)
 
     # EVAL command

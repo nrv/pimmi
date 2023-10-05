@@ -13,7 +13,7 @@ define functional
     pimmi fill demo_dataset/small_dataset/ small --index-path test/ressources/tmp/ -e -f --config-path test/ressources/config.yml
     pimmi query demo_dataset/small_dataset/ small --index-path test/ressources/tmp/ --config-path test/ressources/config.yml
     pimmi clusters small --index-path test/ressources/tmp/ --config-path test/ressources/config.yml -o test/ressources/tmp/small.IDMap,Flat.mining.clusters.csv
-	pimmi viz --clusters test/ressources/tmp/small.IDMap,Flat.mining.clusters.csv --viz test/ressources/tmp/small.IDMap,Flat.mining.clusters.json
+	pimmi viz test/ressources/tmp/small.IDMap,Flat.mining.clusters.csv test/ressources/tmp/small.IDMap,Flat.mining.clusters.json
 endef
 
 # Commands
