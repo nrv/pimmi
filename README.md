@@ -136,38 +136,32 @@ cluster recall: 0.7406974660159374
 cluster f1: 0.7856752626502786
 query average precision: 0.8459113427266295
 ```
-## Trouble shouting for macOS 13.3.1 while installing pimmi :
+## Troubleshooting 
+
+### 1. Error while installing faiss-cpu for macOS 13.3.1
+
+```
+error: command '/usr/local/bin/swig' failed with exit code 1
+```
 
 The installation of pimmi requires the package faiss-cpu. However, on macOS this package cannot be installed by pip. (https://github.com/facebookresearch/faiss/issues/2868)
-To fix this issue, please follow these steps :
+To fix this issue, please follow these steps:
 
 Install Miniconda :
+https://docs.conda.io/projects/miniconda/en/latest/#quick-command-line-install
 
-```
-mkdir -p ~/miniconda3
-curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh -o ~/miniconda3/miniconda.sh
-bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
-rm -rf ~/miniconda3/miniconda.sh
-cd ~/miniconda3
-conda init zsh
-```
-
-Create and activate a virtual environnement :
-
+Create and activate a virtual environnement:
 ```
 conda create --name testenv1
 Conda activate testenv1
 ```
 
-
-In this virtual environment, install faiss-cpu :
-
+In this virtual environment, install faiss-cpu:
 ```
 conda install -c pytorch faiss-cpu
 ```
 
-
-And then you should be able to install pimmi :
+And then you should be able to install pimmi:
 ```
 pip install pimmi
 ```
