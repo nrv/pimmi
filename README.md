@@ -136,6 +136,36 @@ cluster recall: 0.7406974660159374
 cluster f1: 0.7856752626502786
 query average precision: 0.8459113427266295
 ```
+## Troubleshooting 
+
+### 1. Error while installing faiss-cpu for macOS > 12
+
+```
+error: command '/usr/local/bin/swig' failed with exit code 1
+```
+
+The installation of pimmi requires the package faiss-cpu. However, on macOS > 12 this package cannot be installed by pip. (https://github.com/facebookresearch/faiss/issues/2868)
+To fix this issue, please follow these steps:
+
+Install Miniconda :
+https://docs.conda.io/projects/miniconda/en/latest/#quick-command-line-install
+
+Create and activate a virtual environnement:
+```
+conda create --name testenv1
+Conda activate testenv1
+```
+
+In this virtual environment, install faiss-cpu:
+```
+conda install -c pytorch faiss-cpu
+```
+
+And then you should be able to install pimmi:
+```
+pip install pimmi
+```
+
 Happy hacking !
 
 
