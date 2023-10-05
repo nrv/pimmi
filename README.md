@@ -138,13 +138,13 @@ query average precision: 0.8459113427266295
 ```
 ## Troubleshooting 
 
-### 1. Error while installing faiss-cpu for macOS 13.3.1
+### 1. Error while installing faiss-cpu for macOS > 12
 
 ```
 error: command '/usr/local/bin/swig' failed with exit code 1
 ```
 
-The installation of pimmi requires the package faiss-cpu. However, on macOS this package cannot be installed by pip. (https://github.com/facebookresearch/faiss/issues/2868)
+The installation of pimmi requires the package faiss-cpu. However, on macOS > 12 this package cannot be installed by pip. (https://github.com/facebookresearch/faiss/issues/2868)
 To fix this issue, please follow these steps:
 
 Install Miniconda :
