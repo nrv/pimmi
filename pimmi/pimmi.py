@@ -4,6 +4,8 @@ import cv2 as cv
 import faiss
 import pickle
 import logging
+import sys
+
 import csv
 from tqdm import tqdm
 from json import JSONEncoder
@@ -374,15 +376,18 @@ class ImageResultList:
         return set([image.result_image_id for image in self.__images if image.keep])
 
     def to_csv(self, file):
-        with open(file, 'w', newline='') as csvfile:
-            # 'keep', 'keep_smr', 'keep_smn', 'keep_rns',
-            fieldnames = ['pack_id', 'query_image_id', 'result_image_id', 'query_path', 'result_path', 'nb_match_total',
-                          'nb_match_ransac', 'ransac_ratio', 'query_nb_points', 'query_width', 'query_height',
-                          'result_nb_points', 'result_width', 'result_height']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
-            writer.writeheader()
-            for i in self.__images:
-                writer.writerow(i.as_dict())
+        logger.error(file)
+        with open(file) as f:
+            f.write("hello")
+        # 'keep', 'keep_smr', 'keep_smn', 'keep_rns',
+        fieldnames = ['pack_id', 'query_image_id', 'result_image_id', 'query_path', 'result_path', 'nb_match_total',
+                        'nb_match_ransac', 'ransac_ratio', 'query_nb_points', 'query_width', 'query_height',
+                        'result_nb_points', 'result_width', 'result_height']
+        writer = csv.DictWriter(file, fieldnames=fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
+        writer.writeheader()
+        for i in self.__images:
+            writer.writerow(i.as_dict())
+        file.close()
 
 
 class MatchedPoint:

@@ -58,18 +58,30 @@ def from_clusters_to_viz(clusters_file, viz_file):
 
 
 def generate_graph_from_files(file_patterns, min_nb_match_ransac):
-    all_files = glob.glob(file_patterns)
+    print(file_patterns)
+    if file_patterns != "":
+        all_files = glob.glob(file_patterns)
+        for filename in all_files:
+            with open(filename) as f:
+                reader = casanova.reader(f)
+                query_image_id = reader.headers["query_image_id"]
+                result_image_id = reader.headers["result_image_id"]
+                nb_match_ransac = reader.headers["nb_match_ransac"]
 
-    for filename in all_files:
-        with open(filename) as f:
-            reader = casanova.reader(f)
-            query_image_id = reader.headers["query_image_id"]
-            result_image_id = reader.headers["result_image_id"]
-            nb_match_ransac = reader.headers["nb_match_ransac"]
+                for row in reader:
+                    if row[query_image_id] != row[result_image_id] and int(row[nb_match_ransac]) >= min_nb_match_ransac:
+                        yield int(row[query_image_id]), int(row[result_image_id]), int(row[nb_match_ransac])
+    else :
+        reader = casanova.reader(sys.stdin)
+        query_image_id = reader.headers["query_image_id"]
+        result_image_id = reader.headers["result_image_id"]
+        nb_match_ransac = reader.headers["nb_match_ransac"]
 
-            for row in reader:
-                if row[query_image_id] != row[result_image_id] and int(row[nb_match_ransac]) >= min_nb_match_ransac:
-                    yield int(row[query_image_id]), int(row[result_image_id]), int(row[nb_match_ransac])
+        for row in reader:
+            if row[query_image_id] != row[result_image_id] and int(row[nb_match_ransac]) >= min_nb_match_ransac:
+                yield int(row[query_image_id]), int(row[result_image_id]), int(row[nb_match_ransac])
+
+   
 
 
 def metrics_from_subgraph(enum, sg):

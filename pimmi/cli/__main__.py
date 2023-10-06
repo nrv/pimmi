@@ -11,14 +11,15 @@ import sys
 import shutil
 import logging
 import argparse
-
+import os
+import glob
 import pimmi.toolbox as tbx
 import pimmi.pimmi_parameters as constants
 from pimmi.clusters import generate_clusters, from_clusters_to_viz
 from pimmi.eval import evaluate
 from pimmi.cli.config import parameters as prm
 from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
-
+from pathlib import Path
 
 logger = logging.getLogger("pimmi")
 parser = argparse.ArgumentParser(prog="pimmi", description='PIMMI: a command line tool for image mining.')
@@ -51,9 +52,10 @@ def load_cli_parameters():
                                                      "INDEX-NAME will be used as index id by other pimmi commands.")
 
     parser_fill.add_argument('image_dir', type=str, metavar='image-dir')
-    parser_fill.add_argument('index_name', type=str, metavar='index-name')
-    parser_fill.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
-                                                            "Defaults to './index'", default="./index")
+    parser_fill.add_argument('index_dir', type=str,  help="Directory where the index should be stored/loaded. ")
+
+    #parser_fill.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
+     #                                                       "Defaults to './index'", default="./index")
     parser_fill.add_argument("-e", "--erase", action="store_true", help="Erase previously existing index "
                                                                         "if there is one. By default, do not erase and"
                                                                         "fill the existing index with new "
@@ -65,27 +67,28 @@ def load_cli_parameters():
     parser_fill.add_argument("-n", "--nb-img", type=int, help="Use only the first n images in `image_dir`")
     parser_fill.set_defaults(func=fill)
 
-    # QUERY command
+    # QUERY command 
+
     parser_query = subparsers.add_parser('query', help="Query an existing index. Receive IMAGE-DIR, a directory "
                                                        "containing images, and INDEX-NAME, the name given to the index "
                                                        "when using `pimmi fill`.")
     parser_query.add_argument('image_dir', type=str, metavar='image-dir')
-    parser_query.add_argument('index_name', type=str, metavar='index-name')
-    parser_query.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
-                                                             "Defaults to './index'", default="./index")
-    parser_query.add_argument("--nb-per-split", default=10000, type=int, help="Number of images to query per pack. "
-                                                                              "Defaults to 10000.")
+    parser_query.add_argument('index_dir', type=str, help="Directory where the index should be loaded from. ")
+    parser_query.add_argument("-o", "--output", type=argparse.FileType('w'), default=sys.stdin, help="Path to output file. If not provided, print to stdout.")
+    parser_query.add_argument("--output-template", type=str, help='If the filename template is fou, the filenames will be fou1.csv, fou2.csv ...')
+    parser_query.add_argument("--nb-per-split", type=int, help="Number of images to query per pack."
+                                 " Requires to indicate a --filename-template ")
     parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
                                                               " create a config file template.")
     parser_query.add_argument("--simple", action="store_true", default=False)
     parser_query.add_argument("-n", "--nb-img", type=int, help="Query only the first n images in `image_dir`")
     parser_query.set_defaults(func=query)
 
-    # CLUSTERS command
+    # CLUSTERS command # peut prendre comme argument le pipe de query 
     clusters_query = subparsers.add_parser('clusters', help="Create clusters from query results.")
-    clusters_query.add_argument('index_name', type=str, metavar='index-name')
-    clusters_query.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
-                                                             "Defaults to './index'", default="./index")
+    clusters_query.add_argument('index_dir', type=str, help="Directory where the index should be loaded from. ")
+    clusters_query.add_argument('filename', nargs='?',type=str,default=sys.stdin, help="File or file template where the data from query should be loaded from. ")
+
     clusters_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
                                                               " create a config file template.")
     clusters_query.add_argument("--algo", type=str, default='components',
@@ -127,33 +130,44 @@ def load_cli_parameters():
     return cli_parameters
 
 
-def fill(image_dir, index_name, index_path, nb_img, erase=False, force=False, **kwargs):
+def fill(image_dir, index_dir, nb_img, erase=False, force=False, **kwargs):
     if not os.path.isdir(image_dir):
         logger.error("The provided image-dir is not a directory.")
         sys.exit(1)
 
-    if not os.path.isdir(index_path):
-        index_exists = False
-        if confirm("{} is not a directory. Do you want to create one? y/n".format(
-            os.path.abspath(index_path)
-        )):
-            os.mkdir(index_path)
-            faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
+    if not os.path.isdir(Path(index_dir).parent):
+        print('Please enter a valid directory')
+        index_dir = input()
+        if not os.path.isdir(Path(index_dir).parent):
+            logger.error("{} does not exist.".format(os.path.abspath(index_dir)))
+            sys.exit(1)
         else:
-            print('Please enter a valid directory')
-            index_path = input()
-            if not os.path.isdir(index_path):
-                logger.error("{} does not exist.".format(os.path.abspath(index_path)))
-                sys.exit(1)
+            faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
+            if os.path.isfile(faiss_index) and os.path.isfile(faiss_meta):
+                index_exists = True
+                if not force:
+                    if erase:
+                        if not confirm("Are you sure that you want to erase the previously existing index in the folder"+str(Path(index_dir).parent)+"?"):
+                            logger.error("Please restart pimmi fill without '--erase/-e'.")
+                            sys.exit(1)
+                    else:
+                        if not confirm(
+                                "The index already exists. Do you want to fill it with additional images?"
+                        ):
+                            #todo: change the term directory
+                            logger.error("Please restart pimmi fill with '--erase' or choose another directory.")
+                            sys.exit(1)
             else:
-                faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
+                os.mkdir(index_dir)
+                index_exists = False
     else:
-        faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
+        #faiss_index, faiss_meta = make_index_path(index_dir, index_name, prm.index_type)
+        faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
         if os.path.isfile(faiss_index) and os.path.isfile(faiss_meta):
             index_exists = True
             if not force:
                 if erase:
-                    if not confirm("Are you sure that you want to erase the previously existing index?"):
+                    if not confirm("Are you sure that you want to erase the previously existing index in the folder"+str(Path(index_dir).parent)+"?"):
                         logger.error("Please restart pimmi fill without '--erase/-e'.")
                         sys.exit(1)
                 else:
@@ -164,12 +178,12 @@ def fill(image_dir, index_name, index_path, nb_img, erase=False, force=False, **
                         logger.error("Please restart pimmi fill with '--erase' or choose another directory.")
                         sys.exit(1)
         else:
+            os.mkdir(index_dir)
             index_exists = False
-        #todo: error if one file exists but not the other
+        #todo: error if one file exists but not the other        
 
-    if not index_name:
-        index_name = os.path.basename(os.path.normpath(image_dir))
-
+   
+   
     logger.info("listing images recursively from : " + image_dir)
     images = tbx.get_all_images(image_dir, nb_img)
 
@@ -185,9 +199,9 @@ def fill(image_dir, index_name, index_path, nb_img, erase=False, force=False, **
     save_index(filled_index, faiss_index, faiss_meta)
 
 
-def query(index_name, image_dir, index_path, nb_per_split, simple, nb_img, **kwargs):
-
-    faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
+def query( image_dir, index_dir,output, nb_per_split,output_template, simple, nb_img, **kwargs):
+    logger.error(output)
+    faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
 
     index = load_index(faiss_index, faiss_meta)
 
@@ -200,28 +214,54 @@ def query(index_name, image_dir, index_path, nb_per_split, simple, nb_img, **kwa
     logger.info("total number of queries " + str(len(images)))
     # images = images.sort_values(by=constants.dff_image_path)
     images.sort(key=lambda x: x[constants.dff_image_path])
-    queries = tbx.split_pack(images, nb_per_split)
-    for pack in queries:
-        pack_result_file = faiss_index.replace("faiss", "mining") + "_" + str(pack[constants.dff_pack_id])\
-            .zfill(6) + ".csv"
-        logger.info("query " + str(len(pack[constants.dff_pack_files])) + " files from pack " +
-                    str(pack[constants.dff_pack_id]) + " -> " + pack_result_file)
+    if nb_per_split:
+        if not output_template:
+            logger.error("Please restart pimmi query --nb-per-split with '--filename-template' or do not use --nb-per-split.")
+            sys.exit(1)
+        queries = tbx.split_pack(images, nb_per_split) 
+        for i,pack in enumerate(queries):
+            pack_result_file = output_template+str(i)+".csv" if output else sys.stdout
+            #logger.info("query " + str(len(pack[constants.dff_pack_files])) + " files from pack " +
+                        #str(pack[constants.dff_pack_id]) + " -> " + pack_result_file)
+            query_result = query_index_mt(
+                index,
+                pack[constants.dff_pack_files],
+                image_dir,
+                pack=pack[constants.dff_pack_id]
+            )
+            if query_result:
+                query_result.to_csv(pack_result_file)
+    else :
+        pack_result_file = output if output else sys.stdout
+        #logger.info("query " + str(len(pack[constants.dff_pack_files])) + " files from pack " +
+                    #str(pack[constants.dff_pack_id]) + " -> " + pack_result_file)
         query_result = query_index_mt(
             index,
-            pack[constants.dff_pack_files],
-            image_dir,
-            pack=pack[constants.dff_pack_id]
+            images,
+            image_dir
         )
         if query_result:
             query_result.to_csv(pack_result_file)
 
+def clusters( index_dir, filename, output, algo, **kwargs):
+    faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
+    if type(filename) is str :
+        if os.path.isfile(filename) :
+            mining_files = filename
+        else :
+            all_files = glob.glob(filename + "*")
+            if all_files : 
+                mining_files = filename + "*"
+            else :
+                logger.error("The file does not exist")
+                sys.exit(1)
+    else :
+        mining_files=""
 
-def clusters(index_name, index_path, output, algo, **kwargs):
-    faiss_index, faiss_meta = make_index_path(index_path, index_name, prm.index_type)
-    mining_files = faiss_index.replace("faiss", "mining")
-    mining_files_pattern = mining_files + "_*"
+    #si c pas un seul fichier filename*
+    #mining_files_pattern = mining_files + "_*"
     generate_clusters(
-        mining_files_pattern,
+        mining_files,
         faiss_meta,
         output,
         prm.nb_match_ransac,
@@ -244,8 +284,8 @@ def eval(file, predicted_column, truth_column, query_column=None, ignore_missing
     else:
         logger.error("{} file does not exist".format(file))
 
-def make_index_path(index_path, index_name, index_type):
-    path = os.path.join(index_path, ".".join([index_name, index_type]))
+def make_index_path(index_dir, index_name, index_type):
+    path = os.path.join(index_dir, ".".join([index_name, index_type]))
     return ".".join([path, "faiss"]), ".".join([path, "meta"])
 
 

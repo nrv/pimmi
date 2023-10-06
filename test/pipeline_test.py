@@ -49,7 +49,7 @@ def load_clusters_results_from_file(file):
 class TestPipeline(object):
     def test_query(self):
         results = load_query_results_from_file(SMALL_DATASET_QUERY_RESULTS)
-        tested_results = load_query_results_from_file(join(TMP_FOLDER_PATH, "small.IDMap,Flat.mining_000000.csv"))
+        tested_results = load_query_results_from_file(join(TMP_FOLDER_PATH, "small.csv"))
 
         for query in results:
             assert query in tested_results, 'The line corresponding to query %s is missing' % (query)
