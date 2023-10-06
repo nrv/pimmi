@@ -26,6 +26,7 @@ class ClusterViz:
 
 
 def from_clusters_to_viz(clusters_file, viz_file):
+
     logger.info("Loading %s", clusters_file)
     clusters = {}
     with open(clusters_file) as infile:
@@ -46,8 +47,12 @@ def from_clusters_to_viz(clusters_file, viz_file):
             cluster.images.append(row[path_pos])
         reader.close()
     logger.info("Writing %s", viz_file)
-    with open(viz_file, 'w') as outfile:
-        outfile.write(json.dumps(list(clusters.values()), default=obj_dict, indent=4))
+
+    f = open(viz_file, 'w') if viz_file else sys.stdout
+
+    f.write(json.dumps(list(clusters.values()), default=obj_dict, indent=4))
+    f.close()
+
 
 
 def generate_graph_from_files(file_patterns, min_nb_match_ransac):

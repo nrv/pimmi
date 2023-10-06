@@ -94,9 +94,9 @@ def load_cli_parameters():
     clusters_query.set_defaults(func=clusters)
 
     # VIZ command
-    parser_viz = subparsers.add_parser('viz', help="Receive a CSV file containing the clusters and the name of the output .json file.")
+    parser_viz = subparsers.add_parser('viz', help="Create an input file for the visualisation tool pimmi ui. Receive a CSV file containing the clusters.")
     parser_viz.add_argument('clusters')
-    parser_viz.add_argument('viz')
+    parser_viz.add_argument("-o", "--output", type=str, help="Path to output file. If not provided, print to stdout.")
     parser_viz.set_defaults(func=viz)
 
     # EVAL command
@@ -229,8 +229,8 @@ def clusters(index_name, index_path, output, algo, **kwargs):
     )
 
 
-def viz(clusters, viz, **kwargs):
-    from_clusters_to_viz(clusters, viz)
+def viz(clusters, output, **kwargs):
+    from_clusters_to_viz(clusters, output)
 
 
 def eval(file, predicted_column, truth_column, query_column=None, ignore_missing=False, csv=False, **kwargs):
