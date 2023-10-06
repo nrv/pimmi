@@ -95,7 +95,7 @@ def load_cli_parameters():
 
     # VIZ command
     parser_viz = subparsers.add_parser('viz', help="Create an input file for the visualisation tool pimmi ui. Receive a CSV file containing the clusters.")
-    parser_viz.add_argument('clusters')
+    parser_viz.add_argument('clusters',nargs='?',type=argparse.FileType('r'),default=sys.stdin)
     parser_viz.add_argument("-o", "--output", type=str, help="Path to output file. If not provided, print to stdout.")
     parser_viz.set_defaults(func=viz)
 

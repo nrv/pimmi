@@ -29,23 +29,25 @@ def from_clusters_to_viz(clusters_file, viz_file):
 
     logger.info("Loading %s", clusters_file)
     clusters = {}
-    with open(clusters_file) as infile:
-        reader = casanova.reader(infile)
-        path_pos = reader.headers.path
-        cluster_id_pos = reader.headers.cluster_id
-        quality_pos = reader.headers.quality
-        for row in reader:
-            cluster_id = row[cluster_id_pos]
-            if cluster_id in clusters:
-                cluster = clusters[cluster_id]
-            else:
-                cluster = ClusterViz()
-                cluster.cluster = cluster_id
-                cluster.match_quality = row[quality_pos]
-                cluster.sample_path = row[path_pos]
-                clusters[cluster_id] = cluster
-            cluster.images.append(row[path_pos])
-        reader.close()
+    
+    reader = casanova.reader(clusters_file)
+    path_pos = reader.headers.path
+    cluster_id_pos = reader.headers.cluster_id
+    quality_pos = reader.headers.quality
+    for row in reader:
+        
+        cluster_id = row[cluster_id_pos]
+        if cluster_id in clusters:
+            cluster = clusters[cluster_id]
+        else:
+            cluster = ClusterViz()
+            cluster.cluster = cluster_id
+            cluster.match_quality = row[quality_pos]
+            cluster.sample_path = row[path_pos]
+            clusters[cluster_id] = cluster
+        cluster.images.append(row[path_pos])
+    reader.close()
+    
     logger.info("Writing %s", viz_file)
 
     f = open(viz_file, 'w') if viz_file else sys.stdout
