@@ -86,13 +86,15 @@ def load_cli_parameters():
     # CLUSTERS command
     clusters_query = subparsers.add_parser('clusters', help="Create clusters from query results.")
     clusters_query.add_argument('index_dir', type=str, help="Directory where the index should be loaded from. ")
-    clusters_query.add_argument('filename', nargs='?',type=str,default=sys.stdin, help="File or file template where the data from query should be loaded from. ")
+    clusters_query.add_argument('filename', nargs='?', type=str, default=sys.stdin,
+                                help="File or file template where the data from query should be loaded from. ")
 
     clusters_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
                                                               " create a config file template.")
     clusters_query.add_argument("--algo", type=str, default='components',
                                 help="'components' or 'louvain'. Defaults to 'components'")
-    clusters_query.add_argument("-o", "--output", type=str, help="Path to output file. If not provided, print to stdout.")
+    clusters_query.add_argument("-o", "--output", type=argparse.FileType('w'), default=sys.stdout,
+                                help="Path to output file. If not provided, print to stdout.")
     clusters_query.set_defaults(func=clusters)
 
     # VIZ command

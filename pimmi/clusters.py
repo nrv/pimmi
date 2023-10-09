@@ -27,15 +27,14 @@ class ClusterViz:
 
 def from_clusters_to_viz(clusters_file, viz_file):
 
-    logger.info("Loading %s", clusters_file)
+    logger.info("Loading %s", clusters_file.name)
     clusters = {}
-    
+
     reader = casanova.reader(clusters_file)
     path_pos = reader.headers.path
     cluster_id_pos = reader.headers.cluster_id
     quality_pos = reader.headers.quality
     for row in reader:
-        
         cluster_id = row[cluster_id_pos]
         if cluster_id in clusters:
             cluster = clusters[cluster_id]
@@ -55,7 +54,6 @@ def from_clusters_to_viz(clusters_file, viz_file):
 
 
 def generate_graph_from_files(file_patterns, min_nb_match_ransac):
-    print(file_patterns)
     if file_patterns != "":
         all_files = glob.glob(file_patterns)
         for filename in all_files:
@@ -77,8 +75,6 @@ def generate_graph_from_files(file_patterns, min_nb_match_ransac):
         for row in reader:
             if row[query_image_id] != row[result_image_id] and int(row[nb_match_ransac]) >= min_nb_match_ransac:
                 yield int(row[query_image_id]), int(row[result_image_id]), int(row[nb_match_ransac])
-
-   
 
 
 def metrics_from_subgraph(enum, sg):
@@ -144,9 +140,10 @@ def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match
     with open(merged_meta_file, 'rb') as f:
         meta_json = pickle.load(f)
 
-    f = open(clusters_file, 'w') if clusters_file else sys.stdout
-
-    writer = casanova.writer(f, ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"])
+    writer = casanova.writer(
+        clusters_file,
+        ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"]
+    )
     for nb_matches, community_id, node_degrees in yield_communities(g, algo):
         nb_points = []
         paths = []
@@ -163,9 +160,7 @@ def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match
         for node_degree, nb, path in zip(node_degrees, nb_points, paths):
             node_id, degree = node_degree
             writer.writerow([path, node_id, nb, degree, community_id, quality])
-
-    f.close()
-
+    clusters_file.close()
 
 if __name__ == '__main__':
     merged_meta_file = "index/dataset1.IVF1024,Flat.meta"

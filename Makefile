@@ -18,7 +18,8 @@ define functional
 	pimmi viz test/ressources/tmp/small_clusters.csv -o test/ressources/tmp/small_viz.json
 
 	pimmi query demo_dataset/small_dataset/ test/ressources/tmp/small --config-path test/ressources/config.yml | \
-	pimmi clusters test/ressources/tmp/small test/ressources/tmp/small_queries.csv --config-path test/ressources/config.yml
+	pimmi clusters test/ressources/tmp/small --config-path test/ressources/config.yml | \
+	pimmi viz -o test/ressources/tmp/small_viz.json
 
 endef
 
