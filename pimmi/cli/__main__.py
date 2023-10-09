@@ -20,6 +20,7 @@ from pimmi.eval import evaluate
 from pimmi.cli.config import parameters as prm
 from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
 from pathlib import Path
+import math
 
 logger = logging.getLogger("pimmi")
 parser = argparse.ArgumentParser(prog="pimmi", description='PIMMI: a command line tool for image mining.')
@@ -75,7 +76,8 @@ def load_cli_parameters():
     parser_query.add_argument('index_dir', type=str, help="Directory where the index should be loaded from. ")
     parser_query.add_argument("-o", "--output", type=argparse.FileType('w'), default=sys.stdout, help="Path to output file. If not provided, print to stdout.")
     parser_query.add_argument("--output-template", type=str, help='If the filename template is fou, the filenames will be fou1.csv, fou2.csv ...')
-    parser_query.add_argument("--nb-per-split", type=int, help="Number of images to query per pack."
+    parser_query.add_argument("--nb-per-split", type=int, default=10000, help="Number of images to query per pack.")
+    parser_query.add_argument("--nb-per-files", type=int, help="Number of images to query per files."
                                  " Requires to indicate a --filename-template ")
     parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
                                                               " create a config file template.")
@@ -199,7 +201,7 @@ def fill(image_dir, index_dir, nb_img, erase=False, force=False, **kwargs):
     save_index(filled_index, faiss_index, faiss_meta)
 
 
-def query( image_dir, index_dir,output, nb_per_split,output_template, simple, nb_img, **kwargs):
+def query( image_dir, index_dir,output, nb_per_split,nb_per_files, output_template, simple, nb_img, **kwargs):
     faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
 
     index = load_index(faiss_index, faiss_meta)
@@ -213,40 +215,62 @@ def query( image_dir, index_dir,output, nb_per_split,output_template, simple, nb
     logger.info("total number of queries " + str(len(images)))
     # images = images.sort_values(by=constants.dff_image_path)
     images.sort(key=lambda x: x[constants.dff_image_path])
-    if nb_per_split:
+    queries = tbx.split_pack(images, nb_per_split)
+
+    list_files = []
+    if nb_per_files:
         if not output_template:
-            logger.error("Please restart pimmi query --nb-per-split with '--filename-template' or do not use --nb-per-split.")
-            sys.exit(1)
-        queries = tbx.split_pack(images, nb_per_split)
-        for i, pack in enumerate(queries):
-            pack_result_file = output_template+str(i)+".csv" if output else sys.stdout
-            #logger.info("query " + str(len(pack[constants.dff_pack_files])) + " files from pack " +
-                        #str(pack[constants.dff_pack_id]) + " -> " + pack_result_file)
-            query_result = query_index_mt(
-                index,
-                pack[constants.dff_pack_files],
-                image_dir,
-                pack=pack[constants.dff_pack_id]
-            )
-            if query_result:
-                query_result.to_csv(pack_result_file)
-    else :
-        pack_result_file = output if output else sys.stdout
-        #logger.info("query " + str(len(pack[constants.dff_pack_files])) + " files from pack " +
-                    #str(pack[constants.dff_pack_id]) + " -> " + pack_result_file)
-        query_result = query_index_mt(
-            index,
-            images,
-            image_dir,
-            pack=0
-        )
-        if query_result:
-            query_result.to_csv(pack_result_file)
+                logger.error("Please restart pimmi query --nb-per-files with '--output-template' or do not use --nb-per-files.")
+                sys.exit(1)
+        else : 
+            for i in range(math.ceil(len(images)/nb_per_files)):
+                list_files.append(output_template+str(i)+".csv")
+    else:
+        if output :
+            list_files.append(output)
+        else :
+            list_files.append(sys.stdout)  
+        nb_per_files = len(images)
+
+    while list_files != [] :
+        pack_result_file = list_files[0]
+        i=0
+        while i < nb_per_files :
+            for pack in queries : 
+                if i+len(pack) > nb_per_files :
+                    diff = i+len(pack)-nb_per_files
+                    pack_to_add = pack[:diff]
+                    pack_reste = pack[diff:]
+                    queries.remove(pack)
+                    query_result = query_index_mt(
+                        index,
+                        pack_to_add[constants.dff_pack_files],
+                        image_dir,
+                        pack=pack_to_add[constants.dff_pack_id]
+                    )
+                    if query_result:
+                        query_result.to_csv(pack_result_file)
+                    queries.append(pack_reste)
+                    i = nb_per_files
+                else: 
+                    query_result = query_index_mt(
+                        index,
+                        pack[constants.dff_pack_files],
+                        image_dir,
+                        pack=pack[constants.dff_pack_id]
+                    )
+                    if query_result:
+                        query_result.to_csv(pack_result_file)
+                    i+=len(pack)
+
+        del(list_files[0])
+
+   
 
 def clusters( index_dir, filename, output, algo, **kwargs):
     faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
     if type(filename) is str :
-        if os.path.isfile(filename) :
+        if os.path.isfile(filename) and filename != None :
             mining_files = filename
         else :
             all_files = glob.glob(filename + "*")

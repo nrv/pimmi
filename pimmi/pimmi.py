@@ -380,11 +380,14 @@ class ImageResultList:
         fieldnames = ['pack_id', 'query_image_id', 'result_image_id', 'query_path', 'result_path', 'nb_match_total',
                         'nb_match_ransac', 'ransac_ratio', 'query_nb_points', 'query_width', 'query_height',
                         'result_nb_points', 'result_width', 'result_height']
-        writer = csv.DictWriter(file, fieldnames=fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
+        
+        file_open = open(file, 'w') if type(file)==str else file 
+        writer = csv.DictWriter(file_open, fieldnames=fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
         writer.writeheader()
         for i in self.__images:
             writer.writerow(i.as_dict())
-        file.close()
+
+        file_open.close()
 
 
 class MatchedPoint:
