@@ -376,9 +376,6 @@ class ImageResultList:
         return set([image.result_image_id for image in self.__images if image.keep])
 
     def to_csv(self, file):
-        logger.error(file)
-        with open(file) as f:
-            f.write("hello")
         # 'keep', 'keep_smr', 'keep_smn', 'keep_rns',
         fieldnames = ['pack_id', 'query_image_id', 'result_image_id', 'query_path', 'result_path', 'nb_match_total',
                         'nb_match_ransac', 'ransac_ratio', 'query_nb_points', 'query_width', 'query_height',

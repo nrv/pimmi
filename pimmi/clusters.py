@@ -47,13 +47,10 @@ def from_clusters_to_viz(clusters_file, viz_file):
             clusters[cluster_id] = cluster
         cluster.images.append(row[path_pos])
     reader.close()
-    
-    logger.info("Writing %s", viz_file)
 
-    f = open(viz_file, 'w') if viz_file else sys.stdout
-
-    f.write(json.dumps(list(clusters.values()), default=obj_dict, indent=4))
-    f.close()
+    viz_file.write(json.dumps(list(clusters.values()), default=obj_dict, indent=4))
+    viz_file.close()
+    logger.info("Conversion to JSON done.")
 
 
 

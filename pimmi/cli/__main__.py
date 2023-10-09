@@ -67,14 +67,13 @@ def load_cli_parameters():
     parser_fill.add_argument("-n", "--nb-img", type=int, help="Use only the first n images in `image_dir`")
     parser_fill.set_defaults(func=fill)
 
-    # QUERY command 
-
+    # QUERY command
     parser_query = subparsers.add_parser('query', help="Query an existing index. Receive IMAGE-DIR, a directory "
                                                        "containing images, and INDEX-NAME, the name given to the index "
                                                        "when using `pimmi fill`.")
     parser_query.add_argument('image_dir', type=str, metavar='image-dir')
     parser_query.add_argument('index_dir', type=str, help="Directory where the index should be loaded from. ")
-    parser_query.add_argument("-o", "--output", type=argparse.FileType('w'), default=sys.stdin, help="Path to output file. If not provided, print to stdout.")
+    parser_query.add_argument("-o", "--output", type=argparse.FileType('w'), default=sys.stdout, help="Path to output file. If not provided, print to stdout.")
     parser_query.add_argument("--output-template", type=str, help='If the filename template is fou, the filenames will be fou1.csv, fou2.csv ...')
     parser_query.add_argument("--nb-per-split", type=int, help="Number of images to query per pack."
                                  " Requires to indicate a --filename-template ")
@@ -84,7 +83,7 @@ def load_cli_parameters():
     parser_query.add_argument("-n", "--nb-img", type=int, help="Query only the first n images in `image_dir`")
     parser_query.set_defaults(func=query)
 
-    # CLUSTERS command # peut prendre comme argument le pipe de query 
+    # CLUSTERS command
     clusters_query = subparsers.add_parser('clusters', help="Create clusters from query results.")
     clusters_query.add_argument('index_dir', type=str, help="Directory where the index should be loaded from. ")
     clusters_query.add_argument('filename', nargs='?',type=str,default=sys.stdin, help="File or file template where the data from query should be loaded from. ")
@@ -98,8 +97,9 @@ def load_cli_parameters():
 
     # VIZ command
     parser_viz = subparsers.add_parser('viz', help="Create an input file for the visualisation tool pimmi ui. Receive a CSV file containing the clusters.")
-    parser_viz.add_argument('clusters',nargs='?',type=argparse.FileType('r'),default=sys.stdin)
-    parser_viz.add_argument("-o", "--output", type=str, help="Path to output file. If not provided, print to stdout.")
+    parser_viz.add_argument('clusters', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+    parser_viz.add_argument("-o", "--output", type=argparse.FileType('w'), default=sys.stdout,
+                            help="Path to output file. If not provided, print to stdout.")
     parser_viz.set_defaults(func=viz)
 
     # EVAL command
@@ -180,10 +180,8 @@ def fill(image_dir, index_dir, nb_img, erase=False, force=False, **kwargs):
         else:
             os.mkdir(index_dir)
             index_exists = False
-        #todo: error if one file exists but not the other        
+        #todo: error if one file exists but not the other
 
-   
-   
     logger.info("listing images recursively from : " + image_dir)
     images = tbx.get_all_images(image_dir, nb_img)
 
@@ -200,7 +198,6 @@ def fill(image_dir, index_dir, nb_img, erase=False, force=False, **kwargs):
 
 
 def query( image_dir, index_dir,output, nb_per_split,output_template, simple, nb_img, **kwargs):
-    logger.error(output)
     faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
 
     index = load_index(faiss_index, faiss_meta)
@@ -218,8 +215,8 @@ def query( image_dir, index_dir,output, nb_per_split,output_template, simple, nb
         if not output_template:
             logger.error("Please restart pimmi query --nb-per-split with '--filename-template' or do not use --nb-per-split.")
             sys.exit(1)
-        queries = tbx.split_pack(images, nb_per_split) 
-        for i,pack in enumerate(queries):
+        queries = tbx.split_pack(images, nb_per_split)
+        for i, pack in enumerate(queries):
             pack_result_file = output_template+str(i)+".csv" if output else sys.stdout
             #logger.info("query " + str(len(pack[constants.dff_pack_files])) + " files from pack " +
                         #str(pack[constants.dff_pack_id]) + " -> " + pack_result_file)
@@ -238,7 +235,8 @@ def query( image_dir, index_dir,output, nb_per_split,output_template, simple, nb
         query_result = query_index_mt(
             index,
             images,
-            image_dir
+            image_dir,
+            pack=0
         )
         if query_result:
             query_result.to_csv(pack_result_file)
@@ -250,7 +248,7 @@ def clusters( index_dir, filename, output, algo, **kwargs):
             mining_files = filename
         else :
             all_files = glob.glob(filename + "*")
-            if all_files : 
+            if all_files :
                 mining_files = filename + "*"
             else :
                 logger.error("The file does not exist")

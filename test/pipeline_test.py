@@ -2,10 +2,11 @@
 # Pimmi Functional Tests
 # =============================================================================
 import csv
-from glob import glob
-from collections import defaultdict
 from os import remove
-from os.path import join, dirname
+from glob import glob
+from shutil import rmtree
+from collections import defaultdict
+from os.path import join, dirname, isfile, isdir
 
 RESSOURCES_PATH = join(dirname(__file__), "ressources")
 SMALL_DATASET_QUERY_RESULTS = join(RESSOURCES_PATH, "query_results.csv")
@@ -49,7 +50,7 @@ def load_clusters_results_from_file(file):
 class TestPipeline(object):
     def test_query(self):
         results = load_query_results_from_file(SMALL_DATASET_QUERY_RESULTS)
-        tested_results = load_query_results_from_file(join(TMP_FOLDER_PATH, "small.csv"))
+        tested_results = load_query_results_from_file(join(TMP_FOLDER_PATH, "small_queries.csv"))
 
         for query in results:
             assert query in tested_results, 'The line corresponding to query %s is missing' % (query)
@@ -68,11 +69,15 @@ class TestPipeline(object):
 
     def test_cluster(self):
         results = load_clusters_results_from_file(SMALL_DATASET_CLUSTERING_RESULTS)
-        tested_results = load_clusters_results_from_file(join(TMP_FOLDER_PATH, "small.IDMap,Flat.mining.clusters.csv"))
+        tested_results = load_clusters_results_from_file(join(TMP_FOLDER_PATH, "small_clusters.csv"))
 
         for image, row in results.items():
             assert image in tested_results, 'Image %s is missing' % (image)
             assert tested_results[image] == row
 
+
         for file in glob(join(TMP_FOLDER_PATH, "*")):
-            remove(file)
+            if isfile(file):
+                remove(file)
+            elif isdir(file):
+                rmtree(file)
