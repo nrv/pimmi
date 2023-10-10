@@ -89,8 +89,8 @@ class TestPipeline(object):
             assert image in tested_results, 'Image %s is missing' % (image)
             assert tested_results[image] == row
 
-        # for file in glob(join(TMP_FOLDER_PATH, "*")):
-        #     if isfile(file):
-        #         remove(file)
-        #     elif isdir(file):
-        #         rmtree(file)
+        for file in glob.glob(join(TMP_FOLDER_PATH, "*")):
+            if isfile(file):
+                remove(file)
+            elif isdir(file):
+                rmtree(file)
