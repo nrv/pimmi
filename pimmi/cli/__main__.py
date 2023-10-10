@@ -16,7 +16,6 @@ import glob
 import pimmi.toolbox as tbx
 import pimmi.pimmi_parameters as constants
 from pimmi.clusters import generate_clusters, from_clusters_to_viz
-from pimmi.download_demo import download_demo
 from pimmi.eval import evaluate
 from pimmi.cli.config import parameters as prm
 from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
