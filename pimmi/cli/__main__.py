@@ -16,6 +16,7 @@ import glob
 import pimmi.toolbox as tbx
 import pimmi.pimmi_parameters as constants
 from pimmi.clusters import generate_clusters, from_clusters_to_viz
+from pimmi.download_demo import download_demo
 from pimmi.eval import evaluate
 from pimmi.cli.config import parameters as prm
 from pimmi import load_index, save_index, fill_index_mt, create_index_mt, get_index_images, query_index_mt
@@ -57,8 +58,6 @@ def load_cli_parameters():
     parser_fill.add_argument(
         'index_dir', type=str,  help="Directory where the index should be stored/loaded. ")
 
-    # parser_fill.add_argument("--index-path", type=str, help="Directory where the index should be stored/loaded from. "
-    #                                                       "Defaults to './index'", default="./index")
     parser_fill.add_argument("-e", "--erase", action="store_true", help="Erase previously existing index "
                                                                         "if there is one. By default, do not erase and"
                                                                         "fill the existing index with new "
@@ -84,7 +83,7 @@ def load_cli_parameters():
                               help='If the filename template is fou, the filenames will be fou1.csv, fou2.csv ...')
     parser_query.add_argument("--nb-per-split", type=int,
                               default=10000, help="Number of images to query per pack.")
-    parser_query.add_argument("--nb-per-file", type=int, help="Number of images to query per files."
+    parser_query.add_argument("--nb-per-file", type=int, help="Number of lines per file in output"
                               " Requires to indicate a --filename-template ")
     parser_query.add_argument("--config-path", type=str, help="Path to custom config file. Use 'pimmi create-config' to"
                                                               " create a config file template.")
@@ -165,7 +164,7 @@ def fill(image_dir, index_dir, nb_img, erase=False, force=False, **kwargs):
                 os.path.abspath(index_dir)))
             sys.exit(1)
         else:
-            faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
+            faiss_index, faiss_meta = make_index_path(index_dir)
             if os.path.isfile(faiss_index) and os.path.isfile(faiss_meta):
                 index_exists = True
                 if not force:
@@ -186,8 +185,7 @@ def fill(image_dir, index_dir, nb_img, erase=False, force=False, **kwargs):
                 os.mkdir(index_dir)
                 index_exists = False
     else:
-        # faiss_index, faiss_meta = make_index_path(index_dir, index_name, prm.index_type)
-        faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
+        faiss_index, faiss_meta = make_index_path(index_dir)
         if os.path.isfile(faiss_index) and os.path.isfile(faiss_meta):
             index_exists = True
             if not force:
@@ -226,7 +224,7 @@ def fill(image_dir, index_dir, nb_img, erase=False, force=False, **kwargs):
 
 
 def query(image_dir, index_dir, output, nb_per_split, nb_per_file, output_template, simple, nb_img, **kwargs):
-    faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
+    faiss_index, faiss_meta = make_index_path(index_dir)
 
     index = load_index(faiss_index, faiss_meta)
 
@@ -239,26 +237,25 @@ def query(image_dir, index_dir, output, nb_per_split, nb_per_file, output_templa
     # images = images.sort_values(by=constants.dff_image_path)
     images.sort(key=lambda x: x[constants.dff_image_path])
     queries = tbx.split_pack(images, nb_per_split)
-    fieldnames = ['pack_id', 'query_image_id', 'result_image_id', 'query_path', 'result_path', 'nb_match_total',
-                  'nb_match_ransac', 'ransac_ratio', 'query_nb_points', 'query_width', 'query_height',
-                  'result_nb_points', 'result_width', 'result_height']
-    l = 0
+
+    index_file = 0
     if nb_per_file:
         if not output_template:
             logger.error(
                 "Please restart pimmi query --nb-per-file with '--output-template' or do not use --nb-per-file.")
             sys.exit(1)
         else:
-            pack_result_file = output_template + str(l) + ".csv"
+            pack_result_file = output_template + str(index_file) + ".csv"
     else:
-        pack_result_file = output if type(output) == str else sys.stdout
+
+        pack_result_file = output
         nb_per_file = 0
 
     nb_lines = 0
     file_open = open(pack_result_file, 'w') if type(
         pack_result_file) == str else pack_result_file
     writer = csv.DictWriter(
-        file_open, fieldnames=fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
+        file_open, fieldnames=constants.query_fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
     writer.writeheader()
     for pack in queries:
         query_result = query_index_mt(
@@ -275,12 +272,13 @@ def query(image_dir, index_dir, output, nb_per_split, nb_per_file, output_templa
                 if nb_lines == nb_per_file:
 
                     file_open.close()
-                    l += 1
-                    pack_result_file = output_template + str(l) + ".csv"
+                    index_file += 1
+                    pack_result_file = output_template + \
+                        str(index_file) + ".csv"
 
                     file_open = open(pack_result_file, 'w')
                     writer = csv.DictWriter(
-                        file_open, fieldnames=fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
+                        file_open, fieldnames=constants.query_fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
                     writer.writeheader()
                     nb_lines = 0
 
@@ -288,7 +286,7 @@ def query(image_dir, index_dir, output, nb_per_split, nb_per_file, output_templa
 
 
 def clusters(index_dir, filename, output, algo, **kwargs):
-    faiss_index, faiss_meta = index_dir+"/index.faiss", index_dir+"/index.meta"
+    faiss_index, faiss_meta = make_index_path(index_dir)
     if type(filename) is str:
         if os.path.isfile(filename) and filename != None:
             mining_files = filename
@@ -328,9 +326,8 @@ def eval(file, predicted_column, truth_column, query_column=None, ignore_missing
         logger.error("{} file does not exist".format(file))
 
 
-def make_index_path(index_dir, index_name, index_type):
-    path = os.path.join(index_dir, ".".join([index_name, index_type]))
-    return ".".join([path, "faiss"]), ".".join([path, "meta"])
+def make_index_path(index_dir):
+    return os.path.join(index_dir, "index.faiss"), os.path.join(index_dir, "index.meta")
 
 
 def config_params(**kwargs):
