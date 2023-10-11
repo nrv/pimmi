@@ -4,9 +4,9 @@ faiss-cpu
 fog
 github>=1.2.7,<2
 networkx>=2.7,<3
-opencv-python
+opencv-python>=4.8.1,<5
 pyyaml
-tqdm
+tqdm>=4.66.1,<5
 
 # Dev dependencies
 importchecker==2.0

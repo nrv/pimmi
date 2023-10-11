@@ -58,7 +58,6 @@ def generate_graph_from_files(file_patterns, min_nb_match_ransac):
     if file_patterns != "":
         all_files = glob.glob(file_patterns)
         for filename in all_files:
-            print(filename)
             if os.stat(filename).st_size != 0:
                 with open(filename) as f:
                     reader = casanova.reader(f)

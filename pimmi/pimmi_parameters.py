@@ -46,5 +46,9 @@ mex_ext_at_least_one_french = "atLeastOneFrench"
 mex_nbSeen = "nbSeen"
 mex_sha256 = "sha256"
 
+query_fieldnames = ['pack_id', 'query_image_id', 'result_image_id', 'query_path', 'result_path', 'nb_match_total',
+                    'nb_match_ransac', 'ransac_ratio', 'query_nb_points', 'query_width', 'query_height',
+                    'result_nb_points', 'result_width', 'result_height']
+
 # other string constants
 cst_stop = "STOP"
