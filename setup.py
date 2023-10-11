@@ -21,7 +21,7 @@ setup(name='pimmi',
           "casanova",
           "faiss-cpu",
           "fog",
-          "github>=1.2.7,<2"
+          "github>=1.2.7,<2",
           "networkx>=2.7,<3",
           "opencv-python",
           "pyyaml",
