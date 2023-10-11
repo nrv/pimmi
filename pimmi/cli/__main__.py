@@ -147,16 +147,16 @@ def load_cli_parameters():
         'path', type=str, help="Path of the file to be created.")
     parser_create_config.set_defaults(func=create_config)
 
-   # download command
+   # DOWNLOAD command
     parser_download = subparsers.add_parser(
-        'download-demo', help="Download the dataset files in the current directory.")
+        'download-demo', help="Download the dataset files.")
     parser_download.add_argument(
         'dataset', help="The dataset to be downloaded. "
         "You can choose between small_dataset and dataset1. "
         "small_dataset contains 10 images and dataset contaions 1000 images, it takes 2 minutes to be downloaded.")
 
     parser_download.add_argument(
-        '--data-dir', help="The directory were the data should be stored. By default, it will the current directory.")
+        '--data-dir', help="The directory were the data should be stored. By default, it will be in the folder demo_dataset in the current directory.")
 
     parser_download.set_defaults(func=download)
 
@@ -327,9 +327,10 @@ def viz(clusters, output, **kwargs):
 
 
 def download(dataset, data_dir, **kwargs):
-    dir = data_dir if data_dir else os.getcwd()
-    download_demo('nrv/pimmi',
-                  os.path.join('demo_dataset', dataset), dir, True)
+    dir = data_dir if data_dir else os.path.join("demo_dataset", dataset)
+    if not os.path.isdir(dir):
+        os.makedirs(dir)
+    download_demo(dataset, dir)
 
 
 def eval(file, predicted_column, truth_column, query_column=None, ignore_missing=False, csv=False, **kwargs):
