@@ -18,18 +18,19 @@ setup(name='pimmi',
       packages=find_packages(exclude=["collect*", "dist", "build"]),
       include_package_data=True,
       install_requires=[
-        "casanova",
-        "faiss-cpu",
-        "fog",
-        "networkx>=2.7,<3",
-        "opencv-python",
-        "pyyaml",
-        "tqdm",
+          "casanova",
+          "faiss-cpu",
+          "fog",
+          "github>=1.2.7,<2"
+          "networkx>=2.7,<3",
+          "opencv-python",
+          "pyyaml",
+          "tqdm",
       ],
       entry_points={
-        'console_scripts': [
-            'pimmi=pimmi.cli.__main__:main',
-        ]
+          'console_scripts': [
+              'pimmi=pimmi.cli.__main__:main',
+          ]
       },
       zip_safe=True
       )
