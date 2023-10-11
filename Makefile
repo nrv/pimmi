@@ -10,9 +10,23 @@ define clean
 endef
 
 define functional
-    pimmi fill demo_dataset/small_dataset/ small --index-path test/ressources/tmp/ -e -f --config-path test/ressources/config.yml
-    pimmi query demo_dataset/small_dataset/ small --index-path test/ressources/tmp/ --config-path test/ressources/config.yml
-    pimmi clusters small --index-path test/ressources/tmp/ --config-path test/ressources/config.yml -o test/ressources/tmp/small.IDMap,Flat.mining.clusters.csv
+    pimmi fill demo_dataset/small_dataset/  test/ressources/tmp/small -e -f --config-path test/ressources/config.yml
+    pimmi query demo_dataset/small_dataset/  test/ressources/tmp/small --config-path test/ressources/config.yml \
+	--output test/ressources/tmp/small_queries.csv
+	pimmi clusters test/ressources/tmp/small test/ressources/tmp/small_queries.csv --config-path test/ressources/config.yml \
+	-o test/ressources/tmp/small_clusters.csv
+	pimmi viz test/ressources/tmp/small_clusters.csv -o test/ressources/tmp/small_viz.json
+
+	pimmi query demo_dataset/small_dataset/  test/ressources/tmp/small --config-path test/ressources/config.yml \
+	--nb-per-file 30 --output-template test/ressources/tmp/small_queries
+	pimmi clusters test/ressources/tmp/small test/ressources/tmp/small_queries --config-path test/ressources/config.yml \
+	-o test/ressources/tmp/small_clusters.csv
+	pimmi viz test/ressources/tmp/small_clusters.csv -o test/ressources/tmp/small_viz.json
+
+	pimmi query demo_dataset/small_dataset/ test/ressources/tmp/small --config-path test/ressources/config.yml | \
+	pimmi clusters test/ressources/tmp/small --config-path test/ressources/config.yml | \
+	pimmi viz -o test/ressources/tmp/small_viz.json
+
 endef
 
 # Commands

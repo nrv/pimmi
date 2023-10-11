@@ -4,6 +4,8 @@ import cv2 as cv
 import faiss
 import pickle
 import logging
+import sys
+
 import csv
 from tqdm import tqdm
 from json import JSONEncoder
@@ -25,6 +27,7 @@ grid_shift = grid_bits_per_dim * 2
 grid_x_mask = grid_d - 1
 grid_aspect_ratio = True
 
+
 dff_internal_meta = "meta"
 dff_internal_id_generator = "id_generator"
 dff_internal_pack_id = "pack_id"
@@ -37,7 +40,8 @@ dff_internal_faiss_nb_features = "faiss_nb_features"
 # Configure multiprocessing
 set_start_method('fork')
 
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(name)s - %(message)s', level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s : %(levelname)s : %(name)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("pimmi")
 
 
@@ -47,7 +51,8 @@ def resize_if_needed(img):
         h, w = img.shape
         if h > prm.sift_max_image_dimension or w > prm.sift_max_image_dimension:
             r = prm.sift_max_image_dimension / max(h, w)
-            img = cv.resize(img, (int(r * w), int(r * h)), interpolation=cv.INTER_AREA)
+            img = cv.resize(img, (int(r * w), int(r * h)),
+                            interpolation=cv.INTER_AREA)
             resized = True
     return img, resized
 
@@ -78,7 +83,8 @@ def extract_sift(file, image_id, sift, pack=-1):
     if image_id is not None:
         ids = np.empty(len(kp), dtype="int64")
         for sift_point in range(0, len(kp)):
-            ids[sift_point] = point_to_full_id(image_id, kp[sift_point].pt, img.shape[1], img.shape[0])
+            ids[sift_point] = point_to_full_id(
+                image_id, kp[sift_point].pt, img.shape[1], img.shape[0])
     return ids, kp, desc, img.shape[1], img.shape[0]
 
 
@@ -115,7 +121,8 @@ def full_id_to_coord(full_id):
 
 def extract_sift_mt_function(task_queue, result_queue, sift):
     for task in iter(task_queue.get, constants.cst_stop):
-        ids, kp, desc, width, height = extract_sift(task[constants.dff_image_path], task[constants.dff_image_id], sift)
+        ids, kp, desc, width, height = extract_sift(
+            task[constants.dff_image_path], task[constants.dff_image_id], sift)
         result_queue.put({constants.dff_image_id: task[constants.dff_image_id], constants.dff_ids: ids,
                           constants.dff_desc: desc, constants.dff_width: width, constants.dff_height: height})
     # logger.info("one thread has stopped")
@@ -126,7 +133,8 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
     result_queue = Queue()
     for i in range(prm.nb_threads):
         # logger.info("launching thread %d", i)
-        Process(target=extract_sift_mt_function, args=(task_queue, result_queue, sift)).start()
+        Process(target=extract_sift_mt_function, args=(
+            task_queue, result_queue, sift)).start()
 
     task_launched = 0
     for image_path in images:
@@ -159,7 +167,8 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
             desc = result[constants.dff_desc]
             index[dff_internal_meta][image_id][constants.dff_width] = result[constants.dff_width]
             index[dff_internal_meta][image_id][constants.dff_height] = result[constants.dff_height]
-            index[dff_internal_meta][image_id][constants.dff_nb_points] = len(ids)
+            index[dff_internal_meta][image_id][constants.dff_nb_points] = len(
+                ids)
             index[dff_internal_faiss_nb_images] = index[dff_internal_faiss_nb_images] + 1
             if all_features is None:
                 all_features = []
@@ -174,9 +183,11 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
                     len(all_ids)) + " features")
                 index[dff_internal_faiss].train(all_features)
             if not only_empty_index:
-                logger.info("---------- Adding " + str(len(all_ids)) + " features")
+                logger.info("---------- Adding " +
+                            str(len(all_ids)) + " features")
                 index[dff_internal_faiss].add_with_ids(all_features, all_ids)
-            index[dff_internal_faiss_nb_features] = index[dff_internal_faiss_nb_features] + len(all_ids)
+            index[dff_internal_faiss_nb_features] = index[dff_internal_faiss_nb_features] + \
+                len(all_ids)
             all_ids = None
             all_features = None
 
@@ -193,7 +204,8 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
         if not only_empty_index:
             logger.info("---------- Adding " + str(len(all_ids)) + " features")
             index[dff_internal_faiss].add_with_ids(all_features, all_ids)
-        index[dff_internal_faiss_nb_features] = index[dff_internal_faiss_nb_features] + len(all_ids)
+        index[dff_internal_faiss_nb_features] = index[dff_internal_faiss_nb_features] + \
+            len(all_ids)
 
     if not only_empty_index:
         # transform_meta_to_df(index)
@@ -223,10 +235,14 @@ def save_index(index, faiss_file, meta_file):
     if meta_file is not None:
         with open(meta_file, 'wb') as f:
             pickle.dump(index[dff_internal_meta], f, pickle.HIGHEST_PROTOCOL)
-            pickle.dump(index[dff_internal_faiss_type], f, pickle.HIGHEST_PROTOCOL)
-            pickle.dump(index[dff_internal_faiss_nb_images], f, pickle.HIGHEST_PROTOCOL)
-            pickle.dump(index[dff_internal_id_generator], f, pickle.HIGHEST_PROTOCOL)
-            pickle.dump(index[dff_internal_faiss_nb_features], f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(index[dff_internal_faiss_type],
+                        f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(index[dff_internal_faiss_nb_images],
+                        f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(index[dff_internal_id_generator],
+                        f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(index[dff_internal_faiss_nb_features],
+                        f, pickle.HIGHEST_PROTOCOL)
         f.close()
         logger.info("index saved " + faiss_file + "  /  " + meta_file)
     else:
@@ -273,7 +289,8 @@ def get_index_images(index, path_prefix, nb_img=None):
     for image in index[dff_internal_meta].values():
         image_path = os.path.join(path_prefix, image[constants.dff_image_path])
         image_id = image[constants.dff_image_id]
-        all_images.append({constants.dff_image_path: image_path, constants.dff_image_id: image_id})
+        all_images.append(
+            {constants.dff_image_path: image_path, constants.dff_image_id: image_id})
         if nb_img and len(all_images) >= nb_img:
             return all_images
 
@@ -328,19 +345,19 @@ class ImageResult:
 
 class ImageResultList:
     def __init__(self):
-        self.__images: List[ImageResult] = []
+        self.images: List[ImageResult] = []
 
     def __iter__(self):
-        return iter(self.__images)
+        return iter(self.images)
 
     def __len__(self):
-        return len(self.__images)
+        return len(self.images)
 
     def __repr__(self):
-        return 'irl[' + str(len(self.__images)) + ']'
+        return 'irl[' + str(len(self.images)) + ']'
 
     def add_image_result(self, r: ImageResult):
-        self.__images.append(r)
+        self.images.append(r)
 
     def add_new_image_result(self, query_nb_points, result_image_id, nb_match_total, query_image_id):
         r: ImageResult = ImageResult()
@@ -353,36 +370,26 @@ class ImageResultList:
 
     def add_new_image_results(self, query_nb_points, result_images, query_image_id):
         for result_image_id, nb_match_total in result_images.items():
-            self.add_new_image_result(query_nb_points, result_image_id, nb_match_total, query_image_id)
+            self.add_new_image_result(
+                query_nb_points, result_image_id, nb_match_total, query_image_id)
 
     def filter_on_sift_match_ratio(self, min_nb_match):
-        for image in self.__images:
+        for image in self.images:
             image.keep_smr = image.nb_match_total >= min_nb_match
             image.keep = image.keep and image.keep_smr
 
     def filter_on_sift_match_nb(self, min_nb_match):
-        for image in self.__images:
+        for image in self.images:
             image.keep_smn = image.nb_match_total >= min_nb_match
             image.keep = image.keep and image.keep_smn
 
     def filter_on_ransac_sift_match_nb(self, min_nb_match):
-        for image in self.__images:
+        for image in self.images:
             image.keep_rns = image.nb_match_ransac >= min_nb_match
             image.keep = image.keep and image.keep_rns
 
     def get_kept_image_ids(self):
-        return set([image.result_image_id for image in self.__images if image.keep])
-
-    def to_csv(self, file):
-        with open(file, 'w', newline='') as csvfile:
-            # 'keep', 'keep_smr', 'keep_smn', 'keep_rns',
-            fieldnames = ['pack_id', 'query_image_id', 'result_image_id', 'query_path', 'result_path', 'nb_match_total',
-                          'nb_match_ransac', 'ransac_ratio', 'query_nb_points', 'query_width', 'query_height',
-                          'result_nb_points', 'result_width', 'result_height']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
-            writer.writeheader()
-            for i in self.__images:
-                writer.writerow(i.as_dict())
+        return set([image.result_image_id for image in self.images if image.keep])
 
 
 class MatchedPoint:
@@ -419,7 +426,8 @@ class MatchedPointList:
             self.add_new_matched_point(query_id, image_id, point_id)
 
     def keep_only_images(self, image_ids):
-        kept_points = [point for point in self.__points if point.image_id in image_ids]
+        kept_points = [
+            point for point in self.__points if point.image_id in image_ids]
         self.__points = kept_points
 
     def group_by_image_id(self):
@@ -443,7 +451,8 @@ def query_index_single_image(index, sift_query_ids, query_desc, query_width, que
         while need_to_run_nn_again and max_hop > 0:
             if prm.query_ransac:
                 kept_matches = MatchedPointList()
-            all_knn_dist, all_knn_ids = index[dff_internal_faiss].search(query_desc, current_nn)
+            all_knn_dist, all_knn_ids = index[dff_internal_faiss].search(
+                query_desc, current_nn)
             result_images = dict()
             current_nn_is_enough = True
             for sift_query_id, knn_ids, knn_dist in zip(sift_query_ids, all_knn_ids, all_knn_dist):
@@ -458,9 +467,11 @@ def query_index_single_image(index, sift_query_ids, query_desc, query_width, que
                     knn_dist = knn_dist[filter_nonzero_dist]
                     if len(knn_dist) > 0:
                         first_non_zero_dist = knn_dist[0]
-                        filter_on_dist_ratio = first_non_zero_dist / knn_dist > prm.query_dist_ratio_threshold
+                        filter_on_dist_ratio = first_non_zero_dist / \
+                            knn_dist > prm.query_dist_ratio_threshold
                         knn_ids_nonzero = knn_ids_nonzero[filter_on_dist_ratio]
-                        knn_ids_filtered = np.concatenate((knn_ids_zero, knn_ids_nonzero))
+                        knn_ids_filtered = np.concatenate(
+                            (knn_ids_zero, knn_ids_nonzero))
                         if prm.query_adaptative_sift_knn and len(knn_ids_filtered) == len(knn_ids):
                             current_nn_is_enough = False
                             break
@@ -471,7 +482,8 @@ def query_index_single_image(index, sift_query_ids, query_desc, query_width, que
                     kept_matches.add_new_matched_points(sift_query_id, knn_ids)
 
                 for result_image_id in np.unique(full_id_to_image_id(knn_ids)):
-                    result_images[result_image_id] = result_images.get(result_image_id, 0) + 1
+                    result_images[result_image_id] = result_images.get(
+                        result_image_id, 0) + 1
 
             if current_nn_is_enough:
                 need_to_run_nn_again = False
@@ -479,28 +491,34 @@ def query_index_single_image(index, sift_query_ids, query_desc, query_width, que
                 current_nn = current_nn * prm.query_adaptative_knn_mult
                 max_hop -= 1
 
-        query_result.add_new_image_results(len(sift_query_ids), result_images, image_query_id)
+        query_result.add_new_image_results(
+            len(sift_query_ids), result_images, image_query_id)
 
         if prm.query_match_ratio_filter:
-            query_result.filter_on_sift_match_ratio(int(math.floor(len(sift_query_ids) * prm.sift_match_ratio_threshold)))
+            query_result.filter_on_sift_match_ratio(
+                int(math.floor(len(sift_query_ids) * prm.sift_match_ratio_threshold)))
 
         if prm.query_match_nb_filter:
             query_result.filter_on_sift_match_nb(prm.query_match_nb_threshold)
 
         if prm.query_ransac:
             if prm.query_match_ratio_filter or prm.query_match_nb_filter:
-                kept_matches.keep_only_images(query_result.get_kept_image_ids())
+                kept_matches.keep_only_images(
+                    query_result.get_kept_image_ids())
 
             ransac_result = {}
 
             for image_id, matched_pairs in kept_matches.group_by_image_id():
-                query_points = grid_id_to_coord([mp.query_id for mp in matched_pairs]).reshape(-1, 1, 2)
-                matched_points = grid_id_to_coord([mp.point_id for mp in matched_pairs]).reshape(-1, 1, 2)
+                query_points = grid_id_to_coord(
+                    [mp.query_id for mp in matched_pairs]).reshape(-1, 1, 2)
+                matched_points = grid_id_to_coord(
+                    [mp.point_id for mp in matched_pairs]).reshape(-1, 1, 2)
                 # ignored, mask = cv.findHomography(srcPoints=query_points, dstPoints=matched_points, method=cv.RANSAC,
                 #                                   ransacReprojThreshold=5.0)
                 # ignored, mask = cv.findEssentialMat(query_points, matched_points, method=cv.RANSAC, threshold=3.0,
                 #                                     prob=0.99)
-                ignored, mask = cv.estimateAffinePartial2D(query_points, matched_points)
+                ignored, mask = cv.estimateAffinePartial2D(
+                    query_points, matched_points)
                 if mask is None:
                     nb_match_after_ransac = 0
                 else:
@@ -527,7 +545,8 @@ def query_index_single_image(index, sift_query_ids, query_desc, query_width, que
                     ir.keep = False
 
             if prm.query_match_nb_ransac_threshold:
-                query_result.filter_on_ransac_sift_match_nb(prm.query_match_nb_ransac_threshold)
+                query_result.filter_on_ransac_sift_match_nb(
+                    prm.query_match_nb_ransac_threshold)
     return query_result
 
 
@@ -550,11 +569,12 @@ def query_index_mt(index, images, root_path, pack=-1):
     result_queue = Queue()
 
     sift = Sift(prm.sift_nfeatures, prm.sift_nOctaveLayers, prm.sift_contrastThreshold, prm.sift_edgeThreshold,
-                    prm.sift_sigma, prm.nb_threads)
+                prm.sift_sigma, prm.nb_threads)
 
     for i in range(prm.nb_threads):
         # logger.info("launching thread %d", i)
-        Process(target=query_index_mt_function, args=(index, sift, task_queue, result_queue)).start()
+        Process(target=query_index_mt_function, args=(
+            index, sift, task_queue, result_queue)).start()
 
     task_launched = 0
     for image in images:
@@ -571,7 +591,8 @@ def query_index_mt(index, images, root_path, pack=-1):
             )
             task_launched += 1
         else:
-            logger.warning("unable to find image, will not query it : " + image_path)
+            logger.warning(
+                "unable to find image, will not query it : " + image_path)
 
     all_result = ImageResultList()
     for i in tqdm(range(task_launched)):
