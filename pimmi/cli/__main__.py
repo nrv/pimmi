@@ -153,7 +153,7 @@ def load_cli_parameters():
     parser_download.add_argument(
         'dataset', help="The dataset to be downloaded. "
         "You can choose between small_dataset and dataset1. "
-        "small_dataset contains 10 images and dataset contaions 1000 images, it takes 2 minutes to be downloaded.")
+        "small_dataset contains 10 images and dataset contaions 1000 images, it takes 10 minutes to be downloaded.")
 
     parser_download.add_argument(
         '--data-dir', help="The directory were the data should be stored. By default, it will be in the folder demo_dataset in the current directory.")
