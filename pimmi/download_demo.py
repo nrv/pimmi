@@ -24,6 +24,7 @@ def download_demo(dataset, dir):
             os.makedirs(os.path.join(dir, "1"))
 
         dirs = [os.path.join(dir, "0"), os.path.join(dir, "1")]
+
     with tqdm(total=sum(nb_images)) as pbar:
         for index, url_base in enumerate(urls):
             for count in range(nb_images[index]):
