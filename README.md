@@ -113,7 +113,7 @@ pimmi clusters --config-path my_pimmi_conf.yml dataset1
 
 ## Test on the Copydays dataset
 
-Unfortunately, the data files and the dataset explanations are not available anymore, you can get them from web archive with this [link](http://web.archive.org/web/20181015092553if_/http://pascal.inrialpes.fr/data/holidays/) for the data files and with this [link]https://web.archive.org/web/20170325224315/https://lear.inrialpes.fr/people/jegou/data.php for dataset explanations.
+Unfortunately, the data files and the dataset explanations are not available anymore, you can get them from web archive with this [link](http://web.archive.org/web/20181015092553if_/http://pascal.inrialpes.fr/data/holidays/) for the data files and with this [link](https://web.archive.org/web/20170325224315/https://lear.inrialpes.fr/people/jegou/data.php) for dataset explanations.
 
 ### Download the dataset
 
