@@ -15,6 +15,7 @@ import os
 import glob
 import pimmi.toolbox as tbx
 import pimmi.pimmi_parameters as constants
+from pimmi.download_demo import download_demo
 from pimmi.clusters import generate_clusters, from_clusters_to_viz
 from pimmi.eval import evaluate
 from pimmi.cli.config import parameters as prm
@@ -145,6 +146,19 @@ def load_cli_parameters():
     parser_create_config.add_argument(
         'path', type=str, help="Path of the file to be created.")
     parser_create_config.set_defaults(func=create_config)
+
+   # DOWNLOAD command
+    parser_download = subparsers.add_parser(
+        'download-demo', help="Download the dataset files.")
+    parser_download.add_argument(
+        'dataset', choices=['dataset1', 'small_dataset'], help="The dataset to be downloaded. "
+        "You can choose between small_dataset and dataset1. "
+        "small_dataset contains 10 images and dataset1 contains 1000 images, it takes 10 minutes to be downloaded.")
+
+    parser_download.add_argument(
+        '--data-dir', help="The directory were the data should be stored. By default, it will be in the folder demo_dataset in the current directory.")
+
+    parser_download.set_defaults(func=download)
 
     cli_parameters = vars(parser.parse_args(namespace=prm))
     return cli_parameters
@@ -310,6 +324,13 @@ def clusters(index_dir, filename, output, algo, **kwargs):
 
 def viz(clusters, output, **kwargs):
     from_clusters_to_viz(clusters, output)
+
+
+def download(dataset, data_dir, **kwargs):
+    dir = data_dir if data_dir else os.path.join("demo_dataset", dataset)
+    if not os.path.isdir(dir):
+        os.makedirs(dir)
+    download_demo(dataset, dir)
 
 
 def eval(file, predicted_column, truth_column, query_column=None, ignore_missing=False, csv=False, **kwargs):
