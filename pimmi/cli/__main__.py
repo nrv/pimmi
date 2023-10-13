@@ -151,7 +151,7 @@ def load_cli_parameters():
     parser_download = subparsers.add_parser(
         'download-demo', help="Download the dataset files.")
     parser_download.add_argument(
-        'dataset', help="The dataset to be downloaded. "
+        'dataset', choices=['dataset1', 'small_dataset'], help="The dataset to be downloaded. "
         "You can choose between small_dataset and dataset1. "
         "small_dataset contains 10 images and dataset contaions 1000 images, it takes 10 minutes to be downloaded.")
 

@@ -2,7 +2,6 @@
 casanova
 faiss-cpu
 fog
-PyGithub>=1.2.7,<2
 networkx>=2.7,<3
 opencv-python>=4.8.1,<5
 pyyaml
