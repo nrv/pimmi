@@ -113,7 +113,10 @@ pimmi clusters --config-path my_pimmi_conf.yml dataset1
 
 ## Test on the Copydays dataset
 
-You can find the dataset explanations [here](https://web.archive.org/web/20170325224315/https://lear.inrialpes.fr/people/jegou/data.php). Unfortunately, the data files are not available anymore, you can get them from [web archive](http://web.archive.org/web/20181015092553if_/http://pascal.inrialpes.fr/data/holidays/).
+Unfortunately, the data files and the dataset explanations are not available anymore, you can get them from [web archive](http://web.archive.org/web/20181015092553if_/http://pascal.inrialpes.fr/data/holidays/) for the data files and https://web.archive.org/web/20170325224315/https://lear.inrialpes.fr/people/jegou/data.php for dataset explanations.
+
+### Download the dataset
+
 Download the 4 following gunzip folders : copydays_crop.tar.gz, copydays_jpeg.tar.gz, copydays_original.tar.gz, copydays_strong.tar.gz.
 Create a project structure and uncompress all the files downloaded in the same images directory.
 
@@ -126,16 +129,23 @@ copydays
     └───copydays_strong
 ```
 
+### Clone the repository
+
 You can then play with the different parameters and evaluate the results. If you want to loop over several parameters to optimize your settings, you may have a look at eval_copydays.sh.
+To be able to do so, you should have access to the "script" folder, which is in the github repo. Therefore, if you want to reproduce the results, you should clone the repository .
+
+### Commands to reproduce the results
 
 ```bash
-
+cd copydays
 pimmi --sift-nfeatures 1000 --index-type IVF1024,Flat fill images/ my_index_folder
 pimmi --query-sift-knn 1000 --query-dist-ratio-threshold 0.8 --index-type IVF1024,Flat query images my_index_folder -o result_query.csv
 pimmi --index-type IVF1024,Flat --algo components clusters my_index_folder result_query.csv -o clusters.csv
 python ../scripts/copydays_groundtruth.py images/ clusters.csv
 pimmi eval groundtruth.csv --query-column image_status
 ```
+
+### Results :
 
 ```
 cluster precision: 0.98650288140734
