@@ -121,27 +121,32 @@ Download the 4 following gunzip folders : copydays_crop.tar.gz, copydays_jpeg.ta
 Create a project structure and uncompress all the files downloaded in the same images directory.
 
 ```
-copydays
-└───images
-    └───copydays_crop
-    └───original
-    └───jpegqual
-    └───copydays_strong
+images
+   └───copydays_crop
+   └───original
+   └───jpegqual
+   └───copydays_strong
 ```
 
 ### Clone the repository
 
-You can then play with the different parameters and evaluate the results. If you want to loop over several parameters to optimize your settings, you may have a look at eval_copydays.sh.
-To be able to do so, you should have access to the "script" folder, which is in the github repo. Therefore, if you want to reproduce the results, you should clone the repository .
+The script to evaluate your results is not included in the command line interface, so you should clone this repository to access it. It is located in scripts/copydays_groundtruth.py
+
+```bash
+git clone https://github.com/nrv/pimmi.git
+```
 
 ### Commands to reproduce the results
 
 ```bash
-cd copydays
 pimmi --sift-nfeatures 1000 --index-type IVF1024,Flat fill images/ my_index_folder
 pimmi --query-sift-knn 1000 --query-dist-ratio-threshold 0.8 --index-type IVF1024,Flat query images my_index_folder -o result_query.csv
 pimmi --index-type IVF1024,Flat --algo components clusters my_index_folder result_query.csv -o clusters.csv
-python ../scripts/copydays_groundtruth.py images/ clusters.csv
+
+#Run the script to create the groundtruth file
+python scripts/copydays_groundtruth.py images/ clusters.csv
+
+#Compare the results to the groundtruth
 pimmi eval groundtruth.csv --query-column image_status
 ```
 
@@ -153,6 +158,11 @@ cluster recall: 0.7441110375823754
 cluster f1: 0.7838840961245362
 query average precision: 0.839968152866242
 ```
+
+### Play with the parameters
+
+You can then play with the different parameters and re-evaluate the results. If you want to loop over several parameters to optimize your settings, you may have a look at scripts/eval_copydays.sh.
+
 
 ## Troubleshooting
 
