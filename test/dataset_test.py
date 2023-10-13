@@ -3,7 +3,7 @@ import os
 
 
 class TestDataset(object):
-    def dataset_test(self):
+    def test_dataset(self):
         folders = ["demo_dataset/dataset1",
                    "demo_dataset/small_dataset/0", "demo_dataset/small_dataset/1"]
 
