@@ -8,7 +8,7 @@ def download_demo(dataset, dir):
     if dataset == 'dataset1':
         urls = [
             "https://raw.githubusercontent.com/nrv/pimmi/main/demo_dataset/dataset1/000"]
-        nb_images = [1000]
+        nb_images = [1598]
     if dataset == 'small_dataset':
         urls = ["https://raw.githubusercontent.com/nrv/pimmi/main/demo_dataset/small_dataset/0/000",
                 "https://raw.githubusercontent.com/nrv/pimmi/main/demo_dataset/small_dataset/1/000"]
@@ -30,9 +30,12 @@ def download_demo(dataset, dir):
                 if 10 <= numero_image <= 99:
                     url = url_base+"0"+str(numero_image)+".jpg"
                     name = "0000"+str(numero_image)+".jpg"
-                if 100 <= numero_image:
+                if 100 <= numero_image < 1000:
                     url = url_base+str(numero_image)+".jpg"
                     name = "000"+str(numero_image)+".jpg"
+                if 1000 <= numero_image:
+                    url = url_base+str(numero_image)+".jpg"
+                    name = "00"+str(numero_image)+".jpg"
                 contents = requests.get(url)
                 if dataset == 'small_dataset':
                     if index == 0:

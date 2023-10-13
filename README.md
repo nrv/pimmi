@@ -86,20 +86,20 @@ pip install pimmi
 # --- Play with the demo dataset 1
 # Download the demo dataset, it will be loaded in the folder demo_dataset
 # You can choose between small_dataset and dataset1.
-# small_dataset contains 10 images and dataset contaions 1000 images, it takes 2 minutes to be downloaded.
+# small_dataset contains 10 images and dataset contains 1000 images, it takes 2 minutes to be downloaded.
 
 pimmi download_demo dataset1
 
-# Create a default index structure and fill it with the demo dataset. A directory named dataset1 will be created,
+# Create a default index structure and fill it with the demo dataset. A directory named my_index will be created,
 # it will contain the 2 files of the pimmi index : index.faiss and index.meta
-pimmi fill demo_dataset/dataset1 dataset1
+pimmi fill demo_dataset/dataset1 my_index
 
 # Query the same dataset on this index, the results will be stored in
 # result_query.csv
-pimmi query demo_dataset/dataset1 dataset1 -o result_query.csv
+pimmi query demo_dataset/dataset1 my_index -o result_query.csv
 
 # Post process the mining results in order to visualize them
-pimmi clusters dataset1 result_query.csv
+pimmi clusters my_index result_query.csv
 
 # You can also play with the configuration parameters. First, generate a default configuration file
 pimmi create-config my_pimmi_conf.yml
