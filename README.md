@@ -163,7 +163,6 @@ query average precision: 0.839968152866242
 
 You can then play with the different parameters and re-evaluate the results. If you want to loop over several parameters to optimize your settings, you may have a look at scripts/eval_copydays.sh.
 
-
 ## Troubleshooting
 
 ### Error while installing faiss-cpu for macOS > 12
