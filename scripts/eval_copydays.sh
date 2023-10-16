@@ -1,17 +1,20 @@
 #!/bin/bash
 set -e
 
-IMAGES="/var/www/html/pimmi-copydays/copydays/"
-VIRTUALENV=pimmi2
+#IMAGES="/var/www/html/pimmi-copydays/copydays/"
+IMAGES="copydays/images"
+VIRTUALENV=testenv1
 PYTHON_SCRIPT="scripts/copydays_groundtruth.py"
-INDEX_NAME=copydays
+INDEX_NAME=copydays_index
 FILE=benchmark_copydays.csv
+QUERY_OUTPUT=copydays/result_query.csv
+CLUSTER_OUTPUT=copydays/result_clusters.csv
 
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
-pyenv activate $VIRTUALENV
+#eval "$(pyenv init -)"
+#eval "$(pyenv virtualenv-init -)"
+conda activate $VIRTUALENV
 
-mkdir -p index
+#mkdir -p index
 
 if [ ! -f "$FILE" ]; then
     echo "real_time_fill,user_time_fill,sys_time_fill,\
@@ -50,7 +53,7 @@ do
                     for SIFT_SIGMA in 1.4 1.8
                     do 
                         echo "********************Starting to fill index (nfeatures: $SIFT_NFEATURES ; layers: $SIFT_LAYERS ; edge: $SIFT_EDGE ; contrast: $SIFT_CONTRAST ; sigma: $SIFT_SIGMA)"
-                        TIME_FILL=$(/usr/bin/time -f %e,%U,%S pimmi --sift-nOctaveLayers $SIFT_LAYERS --sift-contrastThreshold $SIFT_CONTRAST --sift-nfeatures $SIFT_NFEATURES --sift-edgeThreshold $SIFT_EDGE --sift-sigma $SIFT_SIGMA --index-type $INDEX_TYPE --silent true fill $IMAGES $INDEX_NAME --erase --force 2>&1)
+                        TIME_FILL=$(/usr/bin/time -h pimmi --sift-nOctaveLayers $SIFT_LAYERS --sift-contrastThreshold $SIFT_CONTRAST --sift-nfeatures $SIFT_NFEATURES --sift-edgeThreshold $SIFT_EDGE --sift-sigma $SIFT_SIGMA --index-type $INDEX_TYPE --silent true fill $IMAGES $INDEX_NAME --erase --force 2>&1)
 
                         for QUERY_SIFT_KNN in 100 200 1000 2000
 
@@ -60,19 +63,19 @@ do
 
                             do 
                                 echo "********************Starting to query index (Nb knn: $QUERY_SIFT_KNN , query distance: $QUERY_DIST)"
-                                TIME_QUERY=$(/usr/bin/time -f %e,%U,%S pimmi --query-sift-knn $QUERY_SIFT_KNN --query-dist-ratio-threshold $QUERY_DIST --index-type $INDEX_TYPE --silent true query $IMAGES $INDEX_NAME 2>&1)
+                                TIME_QUERY=$(/usr/bin/time -h pimmi --query-sift-knn $QUERY_SIFT_KNN --query-dist-ratio-threshold $QUERY_DIST --index-type $INDEX_TYPE --silent true  query $IMAGES $INDEX_NAME --output $QUERY_OUTPUT 2>&1)
 
                                 for ALGO in components
 
                                 do
                                     echo "********************Create clusters (Algo: $ALGO)"
-                                    TIME_CLUSTERS=$(/usr/bin/time -f %e,%U,%S pimmi --index-type $INDEX_TYPE --algo $ALGO --silent true clusters $INDEX_NAME 2>&1 )
+                                    TIME_CLUSTERS=$(/usr/bin/time -h pimmi --index-type $INDEX_TYPE --algo $ALGO --silent true clusters $INDEX_NAME $QUERY_OUTPUT --output $CLUSTER_OUTPUT 2>&1 )
 
                                     echo "********************Evaluate"
-                                    python $PYTHON_SCRIPT $IMAGES index/$INDEX_NAME.$INDEX_TYPE.mining.clusters.csv
-                                    METRICS=$(pimmi eval index/$INDEX_NAME.$INDEX_TYPE.mining.groundtruth.csv --query-column image_status --csv)
+                                    python $PYTHON_SCRIPT $IMAGES $CLUSTER_OUTPUT
+                                    METRICS=$(pimmi eval copydays/result_groundtruth.csv --query-column image_status --csv)
 
-                                    IMAGE_COUNT=`wc -l < index/$INDEX_NAME.$INDEX_TYPE.mining.groundtruth.csv`
+                                    IMAGE_COUNT=`wc -l < copydays/result_groundtruth.csv`
 
                                     echo $METRICS
 
