@@ -45,8 +45,6 @@ else:
     MultiProcessClass = Process
     set_start_method('fork')
 
-# set_start_method('fork')
-
 logging.basicConfig(
     format='%(asctime)s : %(levelname)s : %(name)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger("pimmi")
@@ -215,7 +213,6 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
             len(all_ids)
 
     if not only_empty_index:
-        # transform_meta_to_df(index)
         logger.info("index has " + str(index[dff_internal_faiss_nb_images]) + " images with " +
                     str(index[dff_internal_faiss_nb_features]) + " feature points")
     else:
@@ -231,7 +228,6 @@ def create_index_mt(index_type, images, root_path, sift, only_empty_index=False,
     new_faiss.verbose = verbose
     index = {dff_internal_faiss: new_faiss, dff_internal_faiss_type: index_type,
              dff_internal_meta: dict(),
-             # dff_internal_meta_df: None,
              dff_internal_faiss_nb_features: 0, dff_internal_faiss_nb_images: 0,
              dff_internal_id_generator: 0}
     return fill_index_mt(index, images, root_path, sift, only_empty_index=only_empty_index)
@@ -263,7 +259,6 @@ def load_index(faiss_file, meta_file, correct=None, only_meta=False):
         logger.info("index loaded " + faiss_file)
 
     index = {dff_internal_faiss: index_faiss, dff_internal_meta: dict(),
-             # dff_internal_meta_df: None,
              dff_internal_faiss_nb_images: 0, dff_internal_faiss_nb_features: 0}
 
     if meta_file is not None:
@@ -281,8 +276,6 @@ def load_index(faiss_file, meta_file, correct=None, only_meta=False):
                     index[dff_internal_id_generator] = 0
                     index[dff_internal_faiss_nb_features] = 0
             f.close()
-            # if len(index[dff_internal_meta]) > 0:
-            #     transform_meta_to_df(index)
             logger.info("meta loaded " + meta_file)
     logger.info("index has " + str(index[dff_internal_faiss_nb_images]) + "/" + str(index[dff_internal_id_generator]) +
                 " images with " + str(index[dff_internal_faiss_nb_features]) + " feature points")
