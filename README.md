@@ -99,7 +99,7 @@ pimmi fill demo_dataset/dataset1 my_index
 pimmi query demo_dataset/dataset1 my_index -o result_query.csv
 
 # Post process the mining results in order to visualize them
-pimmi clusters my_index result_query.csv
+pimmi clusters my_index result_query.csv clusters.json
 
 # You can also play with the configuration parameters. First, generate a default configuration file
 pimmi create-config my_pimmi_conf.yml

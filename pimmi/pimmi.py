@@ -1,16 +1,17 @@
 import math
+import sys
+
 import numpy as np
 import cv2 as cv
 import faiss
 import pickle
 import logging
-import sys
 
-import csv
 from tqdm import tqdm
 from json import JSONEncoder
 import os.path
 from multiprocessing import Queue, Process, set_start_method
+from threading import Thread
 
 from typing import List
 from itertools import groupby
@@ -38,7 +39,13 @@ dff_internal_faiss_nb_images = "faiss_nb_images"
 dff_internal_faiss_nb_features = "faiss_nb_features"
 
 # Configure multiprocessing
-set_start_method('fork')
+if sys.platform == "win32":
+    MultiProcessClass = Thread
+else:
+    MultiProcessClass = Process
+    set_start_method('fork')
+
+# set_start_method('fork')
 
 logging.basicConfig(
     format='%(asctime)s : %(levelname)s : %(name)s - %(message)s', level=logging.INFO)
@@ -133,7 +140,7 @@ def fill_index_mt(index, images, root_path, sift, only_empty_index=False):
     result_queue = Queue()
     for i in range(prm.nb_threads):
         # logger.info("launching thread %d", i)
-        Process(target=extract_sift_mt_function, args=(
+        MultiProcessClass(target=extract_sift_mt_function, args=(
             task_queue, result_queue, sift)).start()
 
     task_launched = 0
@@ -573,7 +580,7 @@ def query_index_mt(index, images, root_path, pack=-1):
 
     for i in range(prm.nb_threads):
         # logger.info("launching thread %d", i)
-        Process(target=query_index_mt_function, args=(
+        MultiProcessClass(target=query_index_mt_function, args=(
             index, sift, task_queue, result_queue)).start()
 
     task_launched = 0
