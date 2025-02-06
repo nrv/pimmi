@@ -66,6 +66,9 @@ def generate_graph_from_files(file_patterns, min_nb_match_ransac):
                     nb_match_ransac = reader.headers["nb_match_ransac"]
 
                     for row in reader:
+                        # sometimes there are empty rows, maybe there is a better fix when creating the csv ?
+                        if row == []:
+                            continue
                         if row[query_image_id] != row[result_image_id] and int(row[nb_match_ransac]) >= min_nb_match_ransac:
                             yield int(row[query_image_id]), int(row[result_image_id]), int(row[nb_match_ransac])
     else:

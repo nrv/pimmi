@@ -216,7 +216,7 @@ def fill(image_dir, index_dir, nb_img, erase=False, force=False, **kwargs):
                             "Please restart pimmi fill with '--erase' or choose another directory.")
                         sys.exit(1)
         else:
-            os.mkdir(index_dir)
+            os.makedirs(index_dir, exist_ok=True)
             index_exists = False
         # todo: error if one file exists but not the other
 
