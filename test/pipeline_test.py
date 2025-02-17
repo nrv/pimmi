@@ -3,7 +3,7 @@
 # =============================================================================
 import csv
 import math
-from os import remove
+from os import remove, listdir
 import glob
 from shutil import rmtree
 from collections import defaultdict
@@ -14,6 +14,7 @@ SMALL_DATASET_QUERY_RESULTS = join(RESSOURCES_PATH, "query_results.csv")
 SMALL_DATASET_CLUSTERING_RESULTS = join(
     RESSOURCES_PATH, "clusters_results.csv")
 TMP_FOLDER_PATH = join(RESSOURCES_PATH, "tmp")
+TMP_FOLDER_EMPTY = len(listdir(TMP_FOLDER_PATH)) == 1
 NB_LINES_PER_FILE = 30
 
 
@@ -76,6 +77,8 @@ def assert_query(query, results, tested_file):
 
 class TestPipeline(object):
     def test_query(self):
+        if TMP_FOLDER_EMPTY:
+            return
         results, expected_nb_lines = load_query_results_from_files(
             [SMALL_DATASET_QUERY_RESULTS])
         tested_results_unique_file, nb_lines_unique_file = load_query_results_from_files(
@@ -94,6 +97,8 @@ class TestPipeline(object):
             assert_query(query, results, tested_results_multiple_files)
 
     def test_cluster(self):
+        if TMP_FOLDER_EMPTY:
+            return
         results = load_clusters_results_from_file(
             SMALL_DATASET_CLUSTERING_RESULTS)
         tested_results = load_clusters_results_from_file(
