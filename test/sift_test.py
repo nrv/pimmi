@@ -17,7 +17,7 @@ def significant_digits(x):
     if x == 0:
         return x
     else:
-        return round(x, -int(math.floor(math.log10(abs(x)))) + (SIGNIFICANT_DIGITS - 1))
+        return round(x, -int(floor(log10(abs(x)))) + (SIGNIFICANT_DIGITS - 1))
 
 
 class TestSift(object):
