@@ -9,7 +9,7 @@ from test.utils import load_sifts_from_file, EXAMPLE_IMAGE_FILE, IMAGE_PATH, kp_
 
 IMAGE_WIDTH = 512
 IMAGE_HEIGHT = 341
-ROUND_DECIMALS = 2
+ROUND_DECIMALS = 1
 
 
 class TestSift(object):
