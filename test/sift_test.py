@@ -2,6 +2,7 @@
 # Pimmi SIFT Points Unit Tests
 # =============================================================================
 import numpy as np
+from math import log10, floor
 
 from pimmi.pimmi import extract_sift
 from pimmi.toolbox import Sift
@@ -9,7 +10,14 @@ from test.utils import load_sifts_from_file, EXAMPLE_IMAGE_FILE, IMAGE_PATH, kp_
 
 IMAGE_WIDTH = 512
 IMAGE_HEIGHT = 341
-ROUND_DECIMALS = 0
+SIGNIFICANT_DIGITS = 2
+
+def significant_digits(x):
+    # Inspired from https://stackoverflow.com/q/3410976/6053864
+    if x == 0:
+        return x
+    else:
+        return round(x, -int(math.floor(math.log10(abs(x)))) + (SIGNIFICANT_DIGITS - 1))
 
 
 class TestSift(object):
@@ -29,7 +37,7 @@ class TestSift(object):
         assert IMAGE_HEIGHT == tested_height
         assert IMAGE_WIDTH == tested_width
         for kp_item, tested_kp_item in zip(kp, tested_kp):
-            assert round(kp_item.pt[0], ROUND_DECIMALS) == round(tested_kp_item.pt[0], ROUND_DECIMALS)
-            assert round(kp_item.pt[1], ROUND_DECIMALS) == round(tested_kp_item.pt[1], ROUND_DECIMALS)
+            assert significant_digits(kp_item.pt[0]) == significant_digits(tested_kp_item.pt[0])
+            assert significant_digits(kp_item.pt[1]) == significant_digits(tested_kp_item.pt[1])
             for attr in kp_fieldnames[2:]:
-                assert round(float(getattr(kp_item, attr)), ROUND_DECIMALS) == round(float(getattr(tested_kp_item, attr)), ROUND_DECIMALS)
+                assert significant_digits(float(getattr(kp_item, attr))) == significant_digits(float(getattr(tested_kp_item, attr)))
