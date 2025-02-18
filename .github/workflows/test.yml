@@ -17,8 +17,9 @@ jobs:
             python-version: "3.10"
 
           # Mac
-          - os: macos-11
+          - os: macos-latest
             python-version: "3.8"
+
 
 
     runs-on: ${{ matrix.os }}
