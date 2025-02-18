@@ -20,6 +20,9 @@ jobs:
           - os: macos-latest
             python-version: "3.8"
 
+          # Windows
+          - os: windows-latest
+            python-version: "3.8"
 
 
     runs-on: ${{ matrix.os }}
