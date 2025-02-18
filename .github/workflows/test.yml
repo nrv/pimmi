@@ -21,7 +21,6 @@ jobs:
             python-version: "3.8"
 
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v2
 
@@ -37,6 +36,7 @@ jobs:
       - name: Run linter & unit tests
         run: make
 
+  windows-unit:
     runs-on: windows-latest
 
     steps:
