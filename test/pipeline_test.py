@@ -3,6 +3,7 @@
 # =============================================================================
 import csv
 import math
+import sys
 from os import remove, listdir
 import glob
 from shutil import rmtree
@@ -10,9 +11,11 @@ from collections import defaultdict
 from os.path import join, dirname, isfile, isdir
 
 RESSOURCES_PATH = join(dirname(__file__), "ressources")
-SMALL_DATASET_QUERY_RESULTS = join(RESSOURCES_PATH, "query_results.csv")
+# do this to use files that have windows path in it
+OS_SUFFIX = "_win32" if sys.platform == "win32" else ""
+SMALL_DATASET_QUERY_RESULTS = join(RESSOURCES_PATH, f"query_results{OS_SUFFIX}.csv")
 SMALL_DATASET_CLUSTERING_RESULTS = join(
-    RESSOURCES_PATH, "clusters_results.csv")
+    RESSOURCES_PATH, f"clusters_results{OS_SUFFIX}.csv")
 TMP_FOLDER_PATH = join(RESSOURCES_PATH, "tmp")
 TMP_FOLDER_EMPTY = len(listdir(TMP_FOLDER_PATH)) == 1
 NB_LINES_PER_FILE = 30

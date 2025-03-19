@@ -32,6 +32,7 @@ def from_clusters_to_viz(clusters_file, viz_file):
     clusters = {}
 
     reader = casanova.reader(clusters_file)
+
     path_pos = reader.headers.path
     cluster_id_pos = reader.headers.cluster_id
     quality_pos = reader.headers.quality
@@ -66,9 +67,6 @@ def generate_graph_from_files(file_patterns, min_nb_match_ransac):
                     nb_match_ransac = reader.headers["nb_match_ransac"]
 
                     for row in reader:
-                        # sometimes there are empty rows, maybe there is a better fix when creating the csv ?
-                        if row == []:
-                            continue
                         if row[query_image_id] != row[result_image_id] and int(row[nb_match_ransac]) >= min_nb_match_ransac:
                             yield int(row[query_image_id]), int(row[result_image_id]), int(row[nb_match_ransac])
     else:
@@ -146,7 +144,7 @@ def generate_clusters(results_pattern, merged_meta_file, clusters_file, nb_match
 
     writer = casanova.writer(
         clusters_file,
-        ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"]
+        ["path", "image_id", "nb_points", "degree", "cluster_id", "quality"],
     )
     for nb_matches, community_id, node_degrees in yield_communities(g, algo):
         nb_points = []

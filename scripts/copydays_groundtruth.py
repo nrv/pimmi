@@ -18,7 +18,7 @@ def generate_copydays_eval(path_to_images, path_to_clusters_file):
         for row in reader:
             images_to_pimmi_clusters[row[path_pos]] = row[cluster_pos]
 
-    with open(path_to_clusters_file.replace("clusters", "groundtruth"), "w") as f:
+    with open(path_to_clusters_file.replace("clusters", "groundtruth"), "w", newline="") as f:
         writer = casanova.writer(f, fieldnames=["path", "predicted", "truth", "image_status"])
         for image in glob.glob(os.path.join(path_to_images, "*original", "*.jpg")):
             relative_path = image[prefix+2:]

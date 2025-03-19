@@ -4,8 +4,6 @@
 # =============================================================================
 #
 # CLI enpoint of the Pimmi library.
-
-import os
 import csv
 import sys
 import shutil
@@ -13,6 +11,9 @@ import logging
 import argparse
 import os
 import glob
+
+from casanova.__main__ import acquire_cross_platform_stdout
+
 import pimmi.toolbox as tbx
 import pimmi.pimmi_parameters as constants
 from pimmi.download_demo import download_demo
@@ -77,8 +78,7 @@ def load_cli_parameters():
     parser_query.add_argument('image_dir', type=str, metavar='image-dir')
     parser_query.add_argument(
         'index_dir', type=str, help="Directory where the index should be loaded from. ")
-    parser_query.add_argument("-o", "--output", type=argparse.FileType(
-        'w'), default=sys.stdout, help="Path to output file. If not provided, print to stdout.")
+    parser_query.add_argument("-o", "--output", type=str, default=acquire_cross_platform_stdout(), help="Path to output file. If not provided, print to stdout.")
     parser_query.add_argument("--output-template", type=str,
                               help='If the filename template is fou, the filenames will be fou1.csv, fou2.csv ...')
     parser_query.add_argument("--nb-per-split", type=int,
@@ -97,6 +97,7 @@ def load_cli_parameters():
         'clusters', help="Create clusters from query results.")
     clusters_query.add_argument(
         'index_dir', type=str, help="Directory where the index should be loaded from. ")
+
     clusters_query.add_argument('filename', nargs='?', type=str, default=sys.stdin,
                                 help="File or file template where the data from query should be loaded from. ")
 
@@ -104,7 +105,7 @@ def load_cli_parameters():
                                 " create a config file template.")
     clusters_query.add_argument("--algo", type=str, default='components',
                                 help="'components' or 'louvain'. Defaults to 'components'")
-    clusters_query.add_argument("-o", "--output", type=argparse.FileType('w'), default=sys.stdout,
+    clusters_query.add_argument("-o", "--output", type=str, default=acquire_cross_platform_stdout(),
                                 help="Path to output file. If not provided, print to stdout.")
     clusters_query.set_defaults(func=clusters)
 
@@ -112,8 +113,8 @@ def load_cli_parameters():
     parser_viz = subparsers.add_parser(
         'viz', help="Create an input file for the visualisation tool pimmi ui. Receive a CSV file containing the clusters.")
     parser_viz.add_argument('clusters', nargs='?',
-                            type=argparse.FileType('r'), default=sys.stdin)
-    parser_viz.add_argument("-o", "--output", type=argparse.FileType('w'), default=sys.stdout,
+                            type=str, default=sys.stdin)
+    parser_viz.add_argument("-o", "--output", type=str, default=acquire_cross_platform_stdout(),
                             help="Path to output file. If not provided, print to stdout.")
     parser_viz.set_defaults(func=viz)
 
@@ -265,7 +266,7 @@ def query(image_dir, index_dir, output, nb_per_split, nb_per_file, output_templa
         nb_per_file = 0
 
     nb_lines = 0
-    file_open = open(pack_result_file, 'w') if type(
+    file_open = open(pack_result_file, 'w', newline="") if type(
         pack_result_file) == str else pack_result_file
     writer = csv.DictWriter(
         file_open, fieldnames=constants.query_fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
@@ -289,7 +290,7 @@ def query(image_dir, index_dir, output, nb_per_split, nb_per_file, output_templa
                     pack_result_file = output_template + \
                         str(index_file) + ".csv"
 
-                    file_open = open(pack_result_file, 'w')
+                    file_open = open(pack_result_file, 'w', newline="")
                     writer = csv.DictWriter(
                         file_open, fieldnames=constants.query_fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
                     writer.writeheader()
@@ -313,17 +314,21 @@ def clusters(index_dir, filename, output, algo, **kwargs):
     else:
         mining_files = ""
 
+    buffer = open(output, 'w', newline='') if type(output) == str else output
+
     generate_clusters(
         mining_files,
         faiss_meta,
-        output,
+        buffer,
         prm.nb_match_ransac,
         algo,
     )
 
 
 def viz(clusters, output, **kwargs):
-    from_clusters_to_viz(clusters, output)
+    input_buffer = open(clusters, 'r') if type(clusters) == str else clusters
+    output_buffer = open(output, 'w', newline='') if type(output) == str else output
+    from_clusters_to_viz(input_buffer, output_buffer)
 
 
 def download(dataset, data_dir, **kwargs):
